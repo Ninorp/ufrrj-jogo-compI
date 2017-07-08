@@ -3,31 +3,31 @@
 #include "headers/torre.h"
 #include "headers/BaseElemento.h"
 
-typedef struct bala{
+typedef struct bullet{
     Base base;
-    int dano;
-    float v;
+    int damage;
+    float v;//o que é v?
 } Bala;
 
-typedef struct torre{
+typedef struct tower{
     Base base;
-    Bala bala;
-    float custo;
-    float custo_melhora;
+    Bullet bullet;
+    float cost;
+    float upgrade;
     float intervalo_disparo;
-    float raio;
-} Torre;
+    float range;
+} Tower;
 
-int addTorre(float custo, float d_jogador){
-    if(custo < d_jogador){
+int addTower(float cost, float d_player){
+    if(cost < d_palyer){
         return 1;
     }    
     return 0;
 }
 
-int melhorarTorre(Torre *t, float d_jogador){
-    if(t->custo_melhora < d_jogador){
-        t->raio += 2;
+int upgrade(Tower *t, float d_player){
+    if(t->price_upgrade < d_player){
+        t->range += 2;
         return 1;
     }
 }
