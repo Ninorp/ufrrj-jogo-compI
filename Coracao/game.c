@@ -6,16 +6,16 @@
 #include "headers/torre.h"
 
 
-typedef enum game_estado {
+typedef enum game_state {
     MENU = 0,
-    JOGANDO = 1,
-    PAUSADO = 2,
+    PLAY = 1,
+    PAUSE = 2,
     GAME_OVER = 3
 } Game_Estado;
 
 typedef struct game{
-    int rodando;
-    Game_Estado estado;
+    int runing;
+    Game_State state;
 }Game;
 int rodando = 0;
 
