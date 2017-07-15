@@ -3,7 +3,7 @@
 
 float velocidadeAtual(float, float, float);
 
-int colidiu(void *, void *);
+int colidiu(Base *, Base *);
 
 
 #endif

@@ -2,5 +2,5 @@
 #include "headers/baseElemento.h"
 
 typedef struct base{
-    int x, y, high, width;
+    int x, y, heigh, width;
 } Base;
