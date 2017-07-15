@@ -2,12 +2,13 @@
 #define ELEMENTOSGAME
 
 typedef struct tower Tower;
-typedef struct bala Bullet;
-typedef struct minion Minions;
+//typedef struct bala Bullet;
+typedef struct minion Minion;
 typedef struct life Life;
 typedef struct jogador Jogador;
+typedef struct game Game;
 
-void atirar(Torre *t, void *alvo);
+void atirar(Torre t, Minion *alvo);
 
 int addTorre(float custo, float d_jogador);
 
