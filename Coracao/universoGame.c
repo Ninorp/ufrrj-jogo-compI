@@ -11,9 +11,11 @@
 #define SCREEN_SCALE 1
 #define SCREEN_NAME "O  J O G O"
 
-#define Y_FONT 24
+#define Y_FONT 20
 #define Y_MENU 280
-#define X_MENU 440;
+#define X_MENU 440
+#define Y_RECORD 120
+#define X_RECORD 320
 
 typedef enum game_states
 {
@@ -110,11 +112,20 @@ void game_init(void) {
 		Game.screen.window, -1,
 		SDL_RENDERER_ACCELERATED|SDL_RENDERER_PRESENTVSYNC
 	);
+    TTF_Init();
+    fonte = TTF_OpenFont("Arial.ttf", Y_FONT);
 
 	Game.running = 1;
     Game.state = Game_States.MENU;
 }
 
+void refresh(){
+    SDL_RenderPresent(Game.screen.renderer);
+}
+
+void clear(){
+    SDL_RenderClear(Game.screen.renderer);
+}
 void game_quit(void) {
 	SDL_DestroyRenderer(Game.screen.renderer);
 	SDL_DestroyWindow(Game.screen.window);
@@ -126,16 +137,19 @@ void game_quit(void) {
 }
 
 void runMenu()){    
+    
     if(menu == NULL){
         menu.opcao = 0;
-        menu.m_img =  IMG_Load("menu.png");
-        menu.cursor_img = IMG_Load("cursor.png");
+        menu.m_img =  IMG_Load("img/menu.png");
+        menu.cursor_img = IMG_Load("img/cursor.png");
         menu.cursor_position.x = X_MENU;
         menu.cursor_position.y = Y_MENU;
         menu.cursor_position.h = 50;
         menu.cursor_position.w = 50;
         menu.cursor = SDL_CreateTextureFromSurface(Game.screen.renderer, menu.cursor_img);
         menu.img_text = SDL_CreateTextureFromSurface(Game.screen.renderer, menu.m_img;
+        SDL_FreeSurface(menu.m_img);
+        SDL_FreeSurface(menu.cursor_img);
     }
     
     SDL_RenderCopy(Game.screen.renderer, menu.img_text, NULL, NULL);
@@ -160,7 +174,7 @@ void runMenu()){
                     if(!opcao){
                         Game.state = Game_States.PLAY;
                     } else if(opcao == 1){
-
+                        recordTela(leRecords());
                     } else if(opcao == 2){
                         opcoesTela();
                     } else{
@@ -217,10 +231,76 @@ void gravaRecord(Jogador jog){
     fclose(file);
 
 }
-void recordTela(Records recs){
 
+void recordTela(Records recs){
+    SDL_Surface *background = IMG_Load("img/backrecord.png");
+    SDL_Texture *back = SDL_CreateTextureFromSurface(Game.screen.renderer, background);
+    SDL_RenderCopy(Game.screen.renderer, back, NULL, NULL);
+    struct {        
+        SDL_Rect rect[10];
+        SDL_Surface *textsurf[10];
+        SDL_Texture *tetuta[10];
+    } Recds = {
+        NULL, NULL, NULL
+    };
+    char texto[50] = "";
+    SDL_Color color = {0,0,0,255};
+    for(int i = 0; i < 10; i++){
+        Recds.rect[i] = {X_RECORD, Y_RECORD * (i+1), 0, 0};
+        sprintf(texto, "%d :: %s :: %d", i+1, recs.jogadores[i].nome, recs.jogadores[i].pontuacao);
+        Recds.textsurf[i] = TTF_RenderText_Solid(fonte, texto, color);
+        Recds.tetuta[i] = SDL_CreateTextureFromSurface(Game.screen.renderer, Recds.textsurf[i]);
+        SDL_RenderCopy(Game.screen.renderer, Recds.tetuta[i], NULL, &Recds.rect[i]);
+    }
+
+    SDL_Rect rect_voltar = {X_RECORD, Y_RECORD * 12, 0,0};
+    sprintf(texto, "VOLTAR");
+    SDL_Surface *surf = TTF_RenderText_Solid(fonte, texto, color);
+    SDL_Texture *textuta = SDL_CreateTextureFromSurface(Game.screen.renderer, surf);
+    SDL_RenderCopy(Game.screen.renderer, textuta, NULL, &rect_voltar);
+    
+    while(SDL_PollEvent(&event)){
+        if(event.type==SDL_KEYDOWN)
+        {
+            switch(event.key.keysym.sym)
+            {
+                case SDLK_ESCAPE:
+                    runMenu();
+                    menu.opcao = 0;
+                    break;
+            }        
+        } else if(event.type == SDL_MOUSEBUTTONDOWN){
+            if(event.button.button == SDL_BUTTON_LEFT){
+                int x = event.button.x;
+                int y = event.button.y;
+
+                if((x >= X_RECORD && x <= X_RECORD + 26 * 6) 
+                    && (y >= Y_RECORD * 12 && y <= Y_RECORD * 12 + 26 * 6)){
+                        runMenu();
+                        menu.opcao = 0;
+                    }
+            }
+        }
+        if(!menu.opcao)
+            break;
+    }
+
+    SDL_FreeSurface(background);
 }
 
 void opcoesTela(){
+
+}
+
+void runGame(){
+
+}
+
+void pauseGame(){
+
+}
+
+
+void runGame_Over(){
 
 }

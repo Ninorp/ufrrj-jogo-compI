@@ -14,7 +14,12 @@ typedef struct gameOver GameOver;
 
 void game_init(void);
 void game_quit(void);
-void runMenu(int first);
+void refresh();
+void clear();
+void runGame();
+void pauseGame();
+void runGame_Over();
+void runMenu();
 void opcoesTela();
 void recordTela(Records recs);
 void gravaRecord(Jogador jog);

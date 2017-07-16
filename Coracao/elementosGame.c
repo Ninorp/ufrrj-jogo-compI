@@ -1,21 +1,32 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "headers/torre.h"
-#include "headers/BaseElemento.h"
+#include <SDL2/SDL.h>
+#include "headers/elementosGame.h"
+
+//life
+
+typedef struct life{
+    int cont;
+    SDL_Rect backRect, bloodRect;
+
+} Life;
+
+//fim de vida
+
+//orda
+typedef struct orda{
+    int qtd;
+    float level;
+} Orda;
+
+//fim orda
 
 //torres
 
-
-typedef struct bullet{
-    Base base;
-    int damage;
-    float v;//o que � v?
-} Bala;
-
 typedef struct tower{
-    Base base;
-    Bullet bullet;
+    SDL_Rect srcrect, dstrect;
+    int dano;
     float cost;
     float upgrade;
     float intervalo_disparo;
@@ -43,4 +54,10 @@ void atirar(Torre t, Minion *alvo){
 //fim torre
 
 //minions
+typedef minions{
+	
+	Life life;
+    SDL_Rect srcrect, dstrect;
+	int damage;
 
+}Minions;
