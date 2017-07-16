@@ -54,7 +54,7 @@ void atirar(Torre t, Minion *alvo){
 //fim torre
 
 //minions
-typedef minions{
+typedef struct minions{
 	
 	Life life;
     SDL_Rect srcrect, dstrect;

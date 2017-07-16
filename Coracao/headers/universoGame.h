@@ -19,6 +19,7 @@ void clear();
 void runGame();
 void pauseGame();
 void runGame_Over();
+void carregaBackground(char caminho[]);
 void runMenu();
 void opcoesTela();
 void recordTela(Records recs);

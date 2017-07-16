@@ -191,7 +191,7 @@ Records leRecords(){
     Records recs;
     recs.cont = 0;    
     Jogador gamer;
-    game.nome = "";
+
     FILE* file;
     file = fopen("record.txt", "r");
     while(!feof(file)){
@@ -199,12 +199,21 @@ Records leRecords(){
         while((gamer.nome[k] = fgetc(file) != '|')){
             k++;
         }
-        fscanf(file, "|%d\n", &gamer.pontuacao);
-        recs.jogadores[recs.cont] = gamer;
-        recs.cont += 1;
+        gamer.nome[k+1] = '\0';
+        if(fscanf(file, "|%d\n", &gamer.pontuacao)){
+            recs.jogadores[recs.cont] = gamer;
+            recs.cont += 1;
+        }
     }   
     fclose(file);
     return recs;
+}
+
+void carregaBackground(char caminho[]){
+    SDL_Surface *background = IMG_Load(caminho);
+    SDL_Texture *back = SDL_CreateTextureFromSurface(Game.screen.renderer, background);
+    SDL_RenderCopy(Game.screen.renderer, back, NULL, NULL);
+    SDL_FreeSurface(background);
 }
 
 void gravaRecord(Jogador jog){
@@ -233,9 +242,7 @@ void gravaRecord(Jogador jog){
 }
 
 void recordTela(Records recs){
-    SDL_Surface *background = IMG_Load("img/backrecord.png");
-    SDL_Texture *back = SDL_CreateTextureFromSurface(Game.screen.renderer, background);
-    SDL_RenderCopy(Game.screen.renderer, back, NULL, NULL);
+    carregaBackground("imgs/backrecord.png");
     struct {        
         SDL_Rect rect[10];
         SDL_Surface *textsurf[10];
@@ -285,7 +292,7 @@ void recordTela(Records recs){
             break;
     }
 
-    SDL_FreeSurface(background);
+    
 }
 
 void opcoesTela(){
@@ -297,6 +304,36 @@ void runGame(){
 }
 
 void pauseGame(){
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    SDL_Rect rectangle;
+
+    rectangle.x = 0;
+    rectangle.y = 0;
+    rectangle.w = 320;
+    rectangle.h = 240;
+    SDL_RenderFillRect(renderer, &rectangle);
+
+    SDL_Rect rect[3];
+    SDL_Surface *textsurf[3];
+    SDL_Texture *tetuta[3];
+    
+    char texto[50] = "";
+    SDL_Color color = {0,0,0,255};
+    for(int i = 0; i < 10; i++){
+        Recds.rect[i] = {X_RECORD, Y_RECORD * (i+1), 0, 0};
+        sprintf(texto, "%d :: %s :: %d", i+1, recs.jogadores[i].nome, recs.jogadores[i].pontuacao);
+        Recds.textsurf[i] = TTF_RenderText_Solid(fonte, texto, color);
+        Recds.tetuta[i] = SDL_CreateTextureFromSurface(Game.screen.renderer, Recds.textsurf[i]);
+        SDL_RenderCopy(Game.screen.renderer, Recds.tetuta[i], NULL, &Recds.rect[i]);
+    }
+
+    SDL_Rect rect_voltar = {X_RECORD, Y_RECORD * 12, 0,0};
+    sprintf(texto, "VOLTAR");
+    SDL_Surface *surf = TTF_RenderText_Solid(fonte, texto, color);
+    SDL_Texture *textuta = SDL_CreateTextureFromSurface(Game.screen.renderer, surf);
+    SDL_RenderCopy(Game.screen.renderer, textuta, NULL, &rect_voltar);
+
+    
 
 }
 
