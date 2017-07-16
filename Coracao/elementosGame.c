@@ -36,7 +36,7 @@ int upgrade(Tower *t, float d_player){
     }
 }
 
-void atirar(Torre *t, void *alvo){
+void atirar(Torre t, Minion *alvo){
     
 }
 

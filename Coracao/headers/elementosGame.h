@@ -5,14 +5,15 @@ typedef struct tower Tower;
 //typedef struct bala Bullet;
 typedef struct minion Minion;
 typedef struct life Life;
-typedef struct jogador Jogador;
-typedef struct game Game;
+typedef struct orda Orda;
 
 void atirar(Torre t, Minion *alvo);
 
-int addTorre(float custo, float d_jogador);
+void addTorre(float custo, Jogador *j);
 
+void aumentaOrda(Orda *orda);
+void mandaOrda(Orda orda);
 //float deletarTorre(Torre *t);
 
-int melhorarTorre(Tower *t, float d_jogador);
+void upgrade(Tower *t, Jogador *j);
 #endif
