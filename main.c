@@ -10,7 +10,7 @@ int main(int argc, char** argv)
     //int quit = 0;
     while(Game.running) //rodar enquanto nao for para encerrar :)
     {
-        
+        clear();
         switch (Game.state){
             case MENU:
                 runMenu();
@@ -25,8 +25,6 @@ int main(int argc, char** argv)
                 runGame_Over();
                 break;
         }
-
-        clear();
         refresh();
        
     }
