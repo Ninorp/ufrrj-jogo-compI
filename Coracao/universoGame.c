@@ -140,7 +140,7 @@ void runMenu()){
     
     if(menu == NULL){
         menu.opcao = 0;
-        menu.m_img =  IMG_Load("img/menu.png");
+        menu.m_img =  IMG_Load("img/backmenu.png");
         menu.cursor_img = IMG_Load("img/cursor.png");
         menu.cursor_position.x = X_MENU;
         menu.cursor_position.y = Y_MENU;
@@ -242,7 +242,7 @@ void gravaRecord(Jogador jog){
 }
 
 void recordTela(Records recs){
-    carregaBackground("imgs/backrecord.png");
+    carregaBackground("img/backrecord.png");
     struct {        
         SDL_Rect rect[10];
         SDL_Surface *textsurf[10];
