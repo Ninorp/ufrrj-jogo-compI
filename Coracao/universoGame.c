@@ -53,13 +53,14 @@ typedef struct menu{
 } Menu;
 
 typedef struct jogador{
-    float pontuacao, grana, vida;
-    char *nome;
+    float grana;
+    int vida, pontuacao;
+    char nome[50];
 } Jogador;
 
 typedef struct records{
     int cont;
-    Jogador *jogadores;
+    Jogador jogadores[10];
 } Records;
 
 typedef struct gameOver{
@@ -172,15 +173,54 @@ void runMenu()){
 }
 
 Records leRecords(){
+    int i, k;
     Records recs;
+    recs.cont = 0;    
     Jogador gamer;
+    game.nome = "";
     FILE* file;
-    
+    file = fopen("record.txt", "r");
+    while(!feof(file)){
+        k = 0;
+        while((gamer.nome[k] = fgetc(file) != '|')){
+            k++;
+        }
+        fscanf(file, "|%d\n", &gamer.pontuacao);
+        recs.jogadores[recs.cont] = gamer;
+        recs.cont += 1;
+    }   
+    fclose(file);
+    return recs;
 }
 
 void gravaRecord(Jogador jog){
+    Records recs = leRecords();
+    Jogador aux;
+    for(int i = 0; i < recs.cont - 1; i++){
+        if(recs.jogadores[i].pontuacao < jog.pontuacao){
+            aux = recs.jogadores[i];
+            recs.jogadores[i] = jog;
+            recs.jogadores[i+1] = aux;
+        }
+    }
+    FILE *file = fopen("record.txt", "w");
+    int k;
+    for(int i = 0; i < recs.cont - 1; i++){
+        k = 0;
+        while(recs.nome[k] != '\0'){
+            fputc(recs.nome[k], file);
+            k++;
+        }
+        //fputc('|', file);
+        fprintf(file, "|%d\n", recs.jogadores[i].pontuacao);
+    }
+    fclose(file);
 
 }
 void recordTela(Records recs){
+
+}
+
+void opcoesTela(){
 
 }
