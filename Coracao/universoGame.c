@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "headers/universoGame.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -73,16 +74,16 @@ typedef struct gameOver{
 } GameOver;
 
 //variaveis globais
-GameS Game = NULL;
-Menu menu = NULL;
+GameS Game;
+Menu menu;
 
-Mix_Music* musica = NULL;
-Mix_Music* fase = NULL;
-Mix_Chunk* explosao = NULL;
+Mix_Music* musica;
+//Mix_Music* fase;
+Mix_Chunk* explosao;
 
-SDL_Event event = NULL;
+SDL_Event event;
 
-TTF_Font* fonte = NULL;
+TTF_Font* fonte;
 
 void game_init(void) {
 	if(SDL_Init(SDL_INIT_EVERYTHING)!=0) {
@@ -116,7 +117,7 @@ void game_init(void) {
     fonte = TTF_OpenFont("Arial.ttf", Y_FONT);
 
 	Game.running = 1;
-    Game.state = Game_States.MENU;
+    Game.state = 0;
 }
 
 void refresh(){
@@ -136,9 +137,9 @@ void game_quit(void) {
 	SDL_Quit();
 }
 
-void runMenu()){    
+void runMenu(){    
     
-    if(menu == NULL){
+    if(menu.m_img == NULL){
         menu.opcao = 0;
         menu.m_img =  IMG_Load("img/backmenu.png");
         menu.cursor_img = IMG_Load("img/cursor.png");
@@ -147,7 +148,7 @@ void runMenu()){
         menu.cursor_position.h = 50;
         menu.cursor_position.w = 50;
         menu.cursor = SDL_CreateTextureFromSurface(Game.screen.renderer, menu.cursor_img);
-        menu.img_text = SDL_CreateTextureFromSurface(Game.screen.renderer, menu.m_img;
+        menu.img_text = SDL_CreateTextureFromSurface(Game.screen.renderer, menu.m_img);
         SDL_FreeSurface(menu.m_img);
         SDL_FreeSurface(menu.cursor_img);
     }
@@ -157,25 +158,27 @@ void runMenu()){
 
     while(SDL_PollEvent(&event)){
         if(event.type == SDL_KEYDOWN){
-            SDLKey keyPressed = event.key.keysym.sym;
-            switch(keyPressed)                    
+            
+            switch(event.key.keysym.sym)                    
             {                        
                 case SDLK_DOWN:
-                    if(menu.cursor.cursor_position < (Y_MENU + 4 * Y_FONT)
-                        menu.cursor.cursor_position.y += Y_FONT;
-                        opcao += 1;
-                        break;
+                    if(menu.cursor_position.y < (Y_MENU + 4 * Y_FONT)){
+                        menu.cursor_position.y += Y_FONT;
+                        menu.opcao += 1;
+                    }
+                    break;
                 case SDLK_UP:
-                    if(menu.cursor.cursor_position > Y_MENU)
-                        menu.cursor.cursor_position.y -= Y_FONT;
-                        opcao -= 1;
-                        break;
+                    if(menu.cursor_position.y > Y_MENU){
+                        menu.cursor_position.y -= Y_FONT;
+                        menu.opcao -= 1;
+                    }
+                    break;
                 case SDLK_RETURN:
-                    if(!opcao){
-                        Game.state = Game_States.PLAY;
-                    } else if(opcao == 1){
+                    if(!menu.opcao){
+                        Game.state = 1;
+                    } else if(menu.opcao == 1){
                         recordTela(leRecords());
-                    } else if(opcao == 2){
+                    } else if(menu.opcao == 2){
                         opcoesTela();
                     } else{
                         Game.quit();
@@ -230,8 +233,8 @@ void gravaRecord(Jogador jog){
     int k;
     for(int i = 0; i < recs.cont - 1; i++){
         k = 0;
-        while(recs.nome[k] != '\0'){
-            fputc(recs.nome[k], file);
+        while(recs.jogadores[i].nome[k] != '\0'){
+            fputc(recs.jogadores[i].nome[k], file);
             k++;
         }
         //fputc('|', file);
@@ -247,13 +250,16 @@ void recordTela(Records recs){
         SDL_Rect rect[10];
         SDL_Surface *textsurf[10];
         SDL_Texture *tetuta[10];
-    } Recds = {
-        NULL, NULL, NULL
-    };
+    } Recds;
     char texto[50] = "";
     SDL_Color color = {0,0,0,255};
     for(int i = 0; i < 10; i++){
-        Recds.rect[i] = {X_RECORD, Y_RECORD * (i+1), 0, 0};
+        Recds.rect[i].x = X_RECORD;
+        Recds.rect[i].y = Y_RECORD * (i+1);
+        Recds.rect[i].h = 0;
+        Recds.rect[i].w = 0;
+        
+        
         sprintf(texto, "%d :: %s :: %d", i+1, recs.jogadores[i].nome, recs.jogadores[i].pontuacao);
         Recds.textsurf[i] = TTF_RenderText_Solid(fonte, texto, color);
         Recds.tetuta[i] = SDL_CreateTextureFromSurface(Game.screen.renderer, Recds.textsurf[i]);
@@ -304,14 +310,14 @@ void runGame(){
 }
 
 void pauseGame(){
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    SDL_SetRenderDrawColor(Game.screen.renderer, 255, 0, 0, 255);
     SDL_Rect rectangle;
 
     rectangle.x = 0;
     rectangle.y = 0;
     rectangle.w = 320;
     rectangle.h = 240;
-    SDL_RenderFillRect(renderer, &rectangle);
+    SDL_RenderFillRect(Game.screen.renderer, &rectangle);
 
     SDL_Rect rect[3];
     SDL_Surface *textsurf[3];
@@ -319,12 +325,15 @@ void pauseGame(){
     
     char texto[50] = "";
     SDL_Color color = {0,0,0,255};
-    for(int i = 0; i < 10; i++){
-        Recds.rect[i] = {X_RECORD, Y_RECORD * (i+1), 0, 0};
-        sprintf(texto, "%d :: %s :: %d", i+1, recs.jogadores[i].nome, recs.jogadores[i].pontuacao);
-        Recds.textsurf[i] = TTF_RenderText_Solid(fonte, texto, color);
-        Recds.tetuta[i] = SDL_CreateTextureFromSurface(Game.screen.renderer, Recds.textsurf[i]);
-        SDL_RenderCopy(Game.screen.renderer, Recds.tetuta[i], NULL, &Recds.rect[i]);
+    for(int i = 0; i < 3; i++){
+        rect[i].x = X_RECORD;
+        rect[i].y = Y_RECORD * (i+1);
+        rect[i].h = 0;
+        rect[i].w = 0;
+        sprintf(texto, "PAUSE");
+        textsurf[i] = TTF_RenderText_Solid(fonte, texto, color);
+        tetuta[i] = SDL_CreateTextureFromSurface(Game.screen.renderer, textsurf[i]);
+        SDL_RenderCopy(Game.screen.renderer, tetuta[i], NULL, &rect[i]);
     }
 
     SDL_Rect rect_voltar = {X_RECORD, Y_RECORD * 12, 0,0};
