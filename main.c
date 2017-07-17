@@ -19,7 +19,7 @@
 #define Y_MENU 278
 #define X_MENU 650
 #define Y_RECORD 120
-#define X_RECORD SCREEN_W / 2
+#define X_RECORD SCREEN_W / 8
 
 //struchs do universo
 typedef enum
@@ -33,7 +33,7 @@ typedef enum
 
 
 
-typedef struct menu{
+typedef struct {
     Mix_Music* musica;
     Mix_Music* toque;
     int opcao, enterPressed;
@@ -44,18 +44,18 @@ typedef struct menu{
     SDL_Texture *img_text;
 } Menu;
 
-typedef struct jogador{
+typedef struct {
     float grana;
     int vida, pontuacao;
     char nome[50];
 } Jogador;
 
-typedef struct records{
+typedef struct{
     int cont;
     Jogador jogador[10];
 } Records;
 
-typedef struct gameOver{
+typedef struct{
     Mix_Music* musica;
     Mix_Music* toque;
     int opcao;
@@ -67,6 +67,7 @@ typedef struct gameOver{
 
 void game_init(void);
 void game_quit(void);
+void gdraw(int x, int y, int h, int w, SDL_Surface *surface);
 void refresh();
 void clear();
 void runGame();
@@ -76,7 +77,7 @@ void carregaBackground(char caminho[]);
 void runMenu();
 void imgToWindowFull(char caminho[]);
 void recordTela(Records recs);
-void gravaRecord(Jogador jog);
+void gravaRecord(Records *recs, Jogador jog);
 void leRecords(Records *);
 void sort(Records *);
 void bubble_sort(Jogador *, int);
@@ -111,12 +112,18 @@ struct {
 	game_quit
 };
 
-
+/*typedef struct{
+    int cont;
+    char *id;
+    SDL_Texture *mTexture;
+} arrayTexture;
+*/
 //váriáveis globais do universo
 //Screen screen = {0,0,0,0};
 //static GameS Game = {0, screen, 0, game_init, game_quit};
 Menu menu;
-
+//arrayTexture mapTexture;
+SDL_Texture *mTexture;
 Mix_Music* musica;
 //Mix_Music* fase;
 Mix_Chunk* explosao;
@@ -180,7 +187,7 @@ void mandaOrda(Orda orda);
 void upgrade(Tower *t, Jogador *j);
 
 
-int endRecs;
+//int endRecs;
 
 
 //MAIN --------------------------------------------------
@@ -278,12 +285,33 @@ void game_init(void) {
     fonte = TTF_OpenFont("Arial.ttf", Y_FONT);
     musica=Mix_LoadMUS("music/menu.mp3");
 
-    Jogador j = {0,0,50, "2CARINHA"};
+   // Jogador j = {0,0,50, "2CARINHA"};
     //for(int i = 0; i < 10; i++)
-    gravaRecord(j);
+   // Records recs;
+   // printf("->");
+   // leRecords(&recs);
+   // printf("->2");
+   // gravaRecord(&recs, j);
 
 	Game.running = 1;
     Game.state = 0;
+}
+
+void gdraw(int x, int y, int h, int w, SDL_Surface *surface){
+    SDL_Rect srcRect;
+    SDL_Rect destRect;
+    srcRect.x = 0;
+    srcRect.y = 0;
+    srcRect.w = destRect.w = w;
+    srcRect.h = destRect.h = h;
+    destRect.x = x;
+    destRect.y = y;
+    mTexture = SDL_CreateTextureFromSurface(Game.screen.renderer, surface);
+    if(h > 0 && w > 0)
+        SDL_RenderCopy(Game.screen.renderer, mTexture, &srcRect, &destRect);
+    else
+        SDL_RenderCopy(Game.screen.renderer, mTexture, NULL, NULL);
+    SDL_DestroyTexture(mTexture);
 }
 
 void refresh(){
@@ -305,7 +333,7 @@ void game_quit(void) {
 }
 
 void runMenu(){    
-    
+    Records recs; 
     if(menu.m_img == NULL){
         Mix_PlayMusic( musica, -1 );
         menu.opcao = 0;
@@ -317,6 +345,7 @@ void runMenu(){
         menu.cursor_position.w = 45;
         menu.cursor = SDL_CreateTextureFromSurface(Game.screen.renderer, menu.cursor_img);
         menu.img_text = SDL_CreateTextureFromSurface(Game.screen.renderer, menu.m_img);
+
         SDL_FreeSurface(menu.m_img);
         SDL_FreeSurface(menu.cursor_img);
     }
@@ -334,9 +363,9 @@ void runMenu(){
         }
         else if (menu.opcao == 2)
         {
-            Records recs; 
+            
             leRecords(&recs);
-            printf(" passou ");
+           // printf(" passou ");
             recordTela(recs);
             //imgToWindowFull("img/background.jpg");
         }
@@ -357,15 +386,21 @@ void runMenu(){
             switch(event.key.keysym.sym)                    
             {                        
                 case SDLK_DOWN:
-                    if(menu.cursor_position.y < (Y_MENU + 6 * Y_FONT)){
+                    if(menu.cursor_position.y < (Y_MENU + 4 * Y_FONT_MENU)){
                         menu.cursor_position.y += Y_FONT_MENU;
                         menu.opcao += 1;
+                    } else{
+                        menu.cursor_position.y = Y_MENU;
+                        menu.opcao = 0;
                     }
                     break;
                 case SDLK_UP:
                     if(menu.cursor_position.y > Y_MENU){
                         menu.cursor_position.y -= Y_FONT_MENU;
                         menu.opcao -= 1;
+                    } else{
+                        menu.cursor_position.y = Y_MENU + 4 * Y_FONT_MENU;
+                        menu.opcao = 4;
                     }
                     break;
                 case SDLK_RETURN:
@@ -375,13 +410,13 @@ void runMenu(){
                     else if(menu.opcao == 1){
                         imgToWindowFull("img/instrucoes.jpg");
                     } else if(menu.opcao == 2){
-                        Records recor;
-                        leRecords(&recor);
+                        
+                        leRecords(&recs);
                         
                         //Records *recs;
                         //leRecords(recs);
-                        printf(" passou ");
-                        recordTela(recor);
+                        //printf(" passou ");
+                        recordTela(recs);
                        //imgToWindowFull("img/background.jpg");
                     } else if(menu.opcao == 3){
                         imgToWindowFull("img/sobre.jpg");
@@ -400,74 +435,81 @@ void leRecords(Records *recs){
     //Records recs;
     recs->cont = 0;    
     Jogador gamer;
-    //printf("0");
+   // printf("0");
     FILE* f;
     f = fopen("record.bin", "rb");
     if (f != NULL)
     {
-        //printf("1");
+        printf("1");
         for(i = 0; i < 10; i++)
         {
             fseek(f, i * sizeof(Jogador), SEEK_SET);
             int size = fread(&gamer, sizeof(Jogador), 1, f);
-            //printf("1.1");
+     //       printf("1.1");
 		    if (size > 0 && gamer.nome != '\0'){
-                recs->cont += 1;
+                
                 recs->jogador[recs->cont] = gamer;
-                //printf("%s", recs->jogador[recs->cont].nome);
+                recs->cont += 1;
+      //          printf("%s", recs->jogador[recs->cont].nome);
             }
-            //printf("2");
+           // printf("2");
         }
         fclose(f);
     }
     //printf("3");
-    printf(" %d cont",recs->cont);
+    //printf(" %d cont",recs->cont);
     //return recs;
 }
 
 void carregaBackground(char caminho[]){
     SDL_Surface *background = IMG_Load(caminho);
-    SDL_Texture *back = SDL_CreateTextureFromSurface(Game.screen.renderer, background);
-    SDL_RenderCopy(Game.screen.renderer, back, NULL, NULL);
+    //SDL_Texture *back = SDL_CreateTextureFromSurface(Game.screen.renderer, background);
+    //SDL_RenderCopy(Game.screen.renderer, back, NULL, NULL);
+    gdraw(0,0,0,0, background);
     SDL_FreeSurface(background);
 }
 
-void gravaRecord(Jogador jog){
-    Records recs; 
-    leRecords(&recs);
+void gravaRecord(Records *recs, Jogador jog){
+    //Records recs; 
+    //leRecords(&recs);
     //Records *recs;
     //leRecords(recs);
     //Jogador aux;
-    if(recs.cont < 10)
+    //printf("1");
+    if(recs->cont < 10)
     {
-        recs.jogador[recs.cont] = jog;
-        recs.cont += 1;
+        recs->jogador[recs->cont] = jog;
+        recs->cont += 1;
+        //printf("1.0.1");
     }
     else
     {
         Jogador menor_recorde;
-        menor_recorde = recs.jogador[10-1];
+        menor_recorde = recs->jogador[10-1];
         
         if(menor_recorde.pontuacao >= jog.pontuacao)
         {
+            //printf("1.ret");
             return;
         }
         else
         {
-            remove_posicao(&recs, 10 - 1);
-            gravaRecord(jog);
+            //printf("1.0.2");
+            remove_posicao(recs, 10 - 1);
+            gravaRecord(recs, jog);
             return;
         }
     }
-    
-    sort(&recs);
-
+    //printf("1.sort");
+    sort(recs);
+    //printf("1.open");
     FILE *fPtr = fopen("record.bin", "wb");
     //int k;
-    for(int i = 0; i < recs.cont; i++){
+    for(int i = 0; i < recs->cont; i++){
         fseek(fPtr, i * sizeof(Jogador), SEEK_SET);
-		fwrite(&recs.jogador[i], sizeof(Jogador), 1, fPtr);
+		fwrite(&recs->jogador[i], sizeof(Jogador), 1, fPtr);
     }
+    //printf("1.fim");
     fclose(fPtr);
 
 }
@@ -518,29 +560,33 @@ void bubble_sort(Jogador list[], int n)
 
 void recordTela(Records recs){
     carregaBackground("img/background.jpg");
-    printf("%d cont",recs.cont);
+    //printf("%d cont",recs.cont);
     if (recs.cont > 0)
     {
         
-        SDL_Rect rect[10];
-        SDL_Surface *textsurf[10];
-        SDL_Texture *tetuta[10];
+        //SDL_Rect rect[10];
+        SDL_Surface *textsurf;
+        SDL_Texture *tempTexture;
 
         char texto[50] = "";
         SDL_Color color = {0, 0, 0, 255};
+        int texW = 0;
+        int texH = 0;
         for (int i = 0; i < recs.cont; i++)
         {
-            rect[i].x = X_RECORD;
-            rect[i].y = Y_RECORD * (i + 1);
-            rect[i].h = 50;
-            rect[i].w = 150;
-            printf("5");
+            
+           // printf("5");
             sprintf(texto, "%d :: %s :: %d", i + 1, recs.jogador[i].nome, recs.jogador[i].pontuacao);
             //printf("%s", texto);
-            textsurf[i] = TTF_RenderText_Solid(fonte, texto, color);
-            tetuta[i] = SDL_CreateTextureFromSurface(Game.screen.renderer, textsurf[i]);
-            SDL_RenderCopy(Game.screen.renderer, tetuta[i], NULL, &rect[i]);
-            printf("7");
+            textsurf = TTF_RenderText_Solid(fonte, texto, color);
+            tempTexture = SDL_CreateTextureFromSurface(Game.screen.renderer, textsurf);
+            SDL_QueryTexture(tempTexture, NULL, NULL, &texW, &texH);
+            SDL_DestroyTexture(tempTexture);
+            //tetuta[i] = SDL_CreateTextureFromSurface(Game.screen.renderer, textsurf[i]);
+            //SDL_RenderCopy(Game.screen.renderer, tetuta[i], NULL, &rect[i]);
+            gdraw(X_RECORD, Y_RECORD + (texH * (i + 1)), texH, texW, textsurf);
+            //printf("7");
+            SDL_FreeSurface(textsurf);
         }
     }
     /*SDL_Rect rect_voltar = {X_RECORD, Y_RECORD * 12, 0,0};
