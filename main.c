@@ -20,6 +20,14 @@
 #define X_MENU 650
 #define Y_RECORD 120
 #define X_RECORD SCREEN_W / 8
+#define X_VOLTA_INI 424
+#define X_VOLTA_FIM 555
+#define Y_VOLTA_INI 200
+#define Y_VOLTA_FIM 235
+#define X_ABANDONAR_INI 395
+#define X_ABANDONAR_FIM 580
+#define Y_ABANDONAR_INI 270
+#define Y_ABANDONAR_FIM 300
 
 //struchs do universo
 typedef enum
@@ -95,7 +103,7 @@ struct {
 		SDL_Window* window;
 		SDL_Renderer* renderer;
 	} screen;
- 
+    Jogador jogador;
 	// define "methods"
 	void (*init)(void);
 	void (*quit)(void);
@@ -108,6 +116,7 @@ struct {
 		NULL,
 		NULL
 	},
+    {1000,1000,0, '\0'},
 	game_init,
 	game_quit
 };
@@ -440,7 +449,7 @@ void leRecords(Records *recs){
     f = fopen("record.bin", "rb");
     if (f != NULL)
     {
-        printf("1");
+        //printf("1");
         for(i = 0; i < 10; i++)
         {
             fseek(f, i * sizeof(Jogador), SEEK_SET);
@@ -646,44 +655,69 @@ void imgToWindowFull(char caminho[]){
 }
 
 void runGame(){
-
+     while(SDL_PollEvent(&event)){
+        if(event.type==SDL_KEYDOWN)
+        {
+            switch(event.key.keysym.sym)
+            {
+                case SDLK_ESCAPE:
+                    Game.state = 2;                
+                    break;
+            }        
+        }
+        else if(event.type == SDL_MOUSEBUTTONDOWN){
+            if(event.button.button == SDL_BUTTON_LEFT){
+                int x = event.button.x;
+                int y = event.button.y;
+                //printf("x = %d, y = %d", x, y);
+                /*if ((x >= 424 && x <= 554) && (y >= 200 && y <= 234))
+                {
+                    Game.state = 1;
+                }*/
+            }
+        }
+        if(Game.state != 1)
+            break;
+    }
 }
 
 void pauseGame(){
-    SDL_SetRenderDrawColor(Game.screen.renderer, 255, 0, 0, 255);
-    SDL_Rect rectangle;
-
-    rectangle.x = 0;
-    rectangle.y = 0;
-    rectangle.w = 320;
-    rectangle.h = 240;
-    SDL_RenderFillRect(Game.screen.renderer, &rectangle);
-
-    SDL_Rect rect[3];
-    SDL_Surface *textsurf[3];
-    SDL_Texture *tetuta[3];
     
-    char texto[50] = "";
-    SDL_Color color = {0,0,0,255};
-    for(int i = 0; i < 3; i++){
-        rect[i].x = X_RECORD;
-        rect[i].y = Y_RECORD * (i+1);
-        rect[i].h = 0;
-        rect[i].w = 0;
-        sprintf(texto, "PAUSE");
-        textsurf[i] = TTF_RenderText_Solid(fonte, texto, color);
-        tetuta[i] = SDL_CreateTextureFromSurface(Game.screen.renderer, textsurf[i]);
-        SDL_RenderCopy(Game.screen.renderer, tetuta[i], NULL, &rect[i]);
+    SDL_Surface *img = IMG_Load("img/pause.png");
+    //SDL_Texture *back = SDL_CreateTextureFromSurface(Game.screen.renderer, background);
+    //SDL_RenderCopy(Game.screen.renderer, back, NULL, NULL);
+    gdraw(SCREEN_W/4, SCREEN_H/8, 293, 486, img);
+    SDL_FreeSurface(img);
+    while(SDL_PollEvent(&event)){
+        if(event.type==SDL_KEYDOWN)
+        {
+            switch(event.key.keysym.sym)
+            {
+                case SDLK_ESCAPE:
+                    Game.state = 1;                
+                    break;
+            }        
+        }
+        else if(event.type == SDL_MOUSEBUTTONDOWN){
+            if(event.button.button == SDL_BUTTON_LEFT){
+                int x = event.button.x;
+                int y = event.button.y;
+                printf("x = %d, y = %d", x, y);
+                if ((x >= X_VOLTA_INI && x <= X_VOLTA_FIM) && (y >= Y_VOLTA_INI && y <= Y_VOLTA_FIM))
+                {
+                    Game.state = 1;
+                } 
+                else if ((x >= X_ABANDONAR_INI && x <= X_ABANDONAR_FIM) && (y >= Y_ABANDONAR_INI && y <= Y_ABANDONAR_FIM))
+                {
+                    Game.state = 0;
+                    menu.opcao = 0;
+                    menu.enterPressed = 0;
+                }
+            }
+        }
+        if(Game.state != 2)
+            break;
     }
-
-    SDL_Rect rect_voltar = {X_RECORD, Y_RECORD * 12, 0,0};
-    sprintf(texto, "VOLTAR");
-    SDL_Surface *surf = TTF_RenderText_Solid(fonte, texto, color);
-    SDL_Texture *textuta = SDL_CreateTextureFromSurface(Game.screen.renderer, surf);
-    SDL_RenderCopy(Game.screen.renderer, textuta, NULL, &rect_voltar);
-
-    
-
 }
 
 
