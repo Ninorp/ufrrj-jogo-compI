@@ -6,16 +6,20 @@
 #include <SDL2/SDL_ttf.h>
 #include <time.h>
 
-#define SCREEN_W 640
-#define SCREEN_H 480
+#define FPS 30
+#define MS_PER_FRAME 1000 / FPS
+
+#define SCREEN_W 973
+#define SCREEN_H 483
 #define SCREEN_SCALE 1
 #define SCREEN_NAME "O  J O G O"
 
-#define Y_FONT 20
-#define Y_MENU 280
-#define X_MENU 440
+#define Y_FONT 16
+#define Y_FONT_MENU 39
+#define Y_MENU 278
+#define X_MENU 650
 #define Y_RECORD 120
-#define X_RECORD 320
+#define X_RECORD SCREEN_W / 2
 
 //struchs do universo
 typedef enum
@@ -32,7 +36,7 @@ typedef enum
 typedef struct menu{
     Mix_Music* musica;
     Mix_Music* toque;
-    int opcao;
+    int opcao, enterPressed;
     SDL_Surface *cursor_img;
     SDL_Texture *cursor;
     SDL_Rect cursor_position;
@@ -48,7 +52,7 @@ typedef struct jogador{
 
 typedef struct records{
     int cont;
-    Jogador jogadores[10];
+    Jogador jogador[10];
 } Records;
 
 typedef struct gameOver{
@@ -70,10 +74,14 @@ void pauseGame();
 void runGame_Over();
 void carregaBackground(char caminho[]);
 void runMenu();
-void opcoesTela();
+void imgToWindowFull(char caminho[]);
 void recordTela(Records recs);
 void gravaRecord(Jogador jog);
-Records leRecords();
+void leRecords(Records *);
+void sort(Records *);
+void bubble_sort(Jogador *, int);
+//void insere(Records *, Jogador);
+void remove_posicao(Records *, int);
 
 
 struct {
@@ -171,14 +179,28 @@ void mandaOrda(Orda orda);
 
 void upgrade(Tower *t, Jogador *j);
 
+
+int endRecs;
+
+
+//MAIN --------------------------------------------------
+
 int main(int argc, char** argv)
 {
     
+   
     Game.init();
     //int quit = 0;
     while(Game.running) //rodar enquanto nao for para encerrar :)
     {
+        unsigned
+            comeco =
+                SDL_GetTicks();
         clear();
+        if(event.type == SDL_QUIT)
+        {
+            Game.quit();
+        }
         switch (Game.state){
             case 0:
                 runMenu();
@@ -193,6 +215,20 @@ int main(int argc, char** argv)
                 runGame_Over();
                 break;
         }
+        unsigned
+            fim =
+                SDL_GetTicks();
+        unsigned
+            delta =
+                fim -
+                comeco;
+        if (delta <
+            MS_PER_FRAME)
+        {
+            SDL_Delay(MS_PER_FRAME -
+                      delta);
+        }
+        //printf(" %llf ", delta);
         refresh();
        
     }
@@ -201,7 +237,7 @@ int main(int argc, char** argv)
     return 0;
 }
 
-
+//MAIN -------------------------------------------------- fim
 
 
 
@@ -240,6 +276,11 @@ void game_init(void) {
 	);
     TTF_Init();
     fonte = TTF_OpenFont("Arial.ttf", Y_FONT);
+    musica=Mix_LoadMUS("music/menu.mp3");
+
+    Jogador j = {0,0,50, "2CARINHA"};
+    //for(int i = 0; i < 10; i++)
+    gravaRecord(j);
 
 	Game.running = 1;
     Game.state = 0;
@@ -260,85 +301,128 @@ void game_quit(void) {
 	Game.screen.renderer = NULL;
 
 	SDL_Quit();
+    exit(-1);
 }
 
 void runMenu(){    
     
     if(menu.m_img == NULL){
+        Mix_PlayMusic( musica, -1 );
         menu.opcao = 0;
         menu.m_img =  IMG_Load("img/backmenu.png");
         menu.cursor_img = IMG_Load("img/cursor.png");
         menu.cursor_position.x = X_MENU;
         menu.cursor_position.y = Y_MENU;
-        menu.cursor_position.h = 50;
-        menu.cursor_position.w = 50;
+        menu.cursor_position.h = 45;
+        menu.cursor_position.w = 45;
         menu.cursor = SDL_CreateTextureFromSurface(Game.screen.renderer, menu.cursor_img);
         menu.img_text = SDL_CreateTextureFromSurface(Game.screen.renderer, menu.m_img);
         SDL_FreeSurface(menu.m_img);
         SDL_FreeSurface(menu.cursor_img);
     }
-    
+    if(menu.enterPressed == 0){
     SDL_RenderCopy(Game.screen.renderer, menu.img_text, NULL, NULL);
     SDL_RenderCopy(Game.screen.renderer, menu.cursor, NULL, &menu.cursor_position);
-
-    while(SDL_PollEvent(&event)){
-        if(event.type == SDL_QUIT)
+    } else {
+        if (!menu.opcao)
         {
-            Game.quit();
+            Game.state = 1;
         }
+        else if (menu.opcao == 1)
+        {
+            imgToWindowFull("img/instrucoes.jpg");
+        }
+        else if (menu.opcao == 2)
+        {
+            Records recs; 
+            leRecords(&recs);
+            printf(" passou ");
+            recordTela(recs);
+            //imgToWindowFull("img/background.jpg");
+        }
+        else if (menu.opcao == 3)
+        {
+            imgToWindowFull("img/sobre.jpg");
+        }
+        else
+        {
+            //Game.quit();
+        }
+        return;
+    }
+    while(SDL_PollEvent(&event)){
+        
         if(event.type == SDL_KEYDOWN){
             
             switch(event.key.keysym.sym)                    
             {                        
                 case SDLK_DOWN:
-                    if(menu.cursor_position.y < (Y_MENU + 4 * Y_FONT)){
-                        menu.cursor_position.y += Y_FONT;
+                    if(menu.cursor_position.y < (Y_MENU + 6 * Y_FONT)){
+                        menu.cursor_position.y += Y_FONT_MENU;
                         menu.opcao += 1;
                     }
                     break;
                 case SDLK_UP:
                     if(menu.cursor_position.y > Y_MENU){
-                        menu.cursor_position.y -= Y_FONT;
+                        menu.cursor_position.y -= Y_FONT_MENU;
                         menu.opcao -= 1;
                     }
                     break;
                 case SDLK_RETURN:
                     if(!menu.opcao){
-                        Game.state = 1;
-                    } else if(menu.opcao == 1){
-                        recordTela(leRecords());
+                        Game.state = 1;                        
+                    }
+                    else if(menu.opcao == 1){
+                        imgToWindowFull("img/instrucoes.jpg");
                     } else if(menu.opcao == 2){
-                        opcoesTela();
+                        Records recor;
+                        leRecords(&recor);
+                        
+                        //Records *recs;
+                        //leRecords(recs);
+                        printf(" passou ");
+                        recordTela(recor);
+                       //imgToWindowFull("img/background.jpg");
+                    } else if(menu.opcao == 3){
+                        imgToWindowFull("img/sobre.jpg");
                     } else{
                         Game.quit();
                     }
+                    menu.enterPressed = 1;
                     break;                
             }    
         }
     }
 }
 
-Records leRecords(){
+void leRecords(Records *recs){
     int i, k;
-    Records recs;
-    recs.cont = 0;    
+    //Records recs;
+    recs->cont = 0;    
     Jogador gamer;
-
-    FILE* file;
-    file = fopen("record.txt", "r");
-    while(!feof(file)){
-        k = 0;
-        while((gamer.nome[k] = fgetc(file) != '|')){
-            k++;
+    //printf("0");
+    FILE* f;
+    f = fopen("record.bin", "rb");
+    if (f != NULL)
+    {
+        //printf("1");
+        for(i = 0; i < 10; i++)
+        {
+            fseek(f, i * sizeof(Jogador), SEEK_SET);
+            int size = fread(&gamer, sizeof(Jogador), 1, f);
+            //printf("1.1");
+		    if (size > 0 && gamer.nome != '\0'){
+                recs->cont += 1;
+                recs->jogador[recs->cont] = gamer;
+                //printf("%s", recs->jogador[recs->cont].nome);
+            }
+            //printf("2");
         }
-        gamer.nome[k+1] = '\0';
-        if(fscanf(file, "|%d\n", &gamer.pontuacao)){
-            recs.jogadores[recs.cont] = gamer;
-            recs.cont += 1;
-        }
-    }   
-    fclose(file);
-    return recs;
+        fclose(f);
+    }
+    //printf("3");
+    printf(" %d cont",recs->cont);
+    //return recs;
 }
 
 void carregaBackground(char caminho[]){
@@ -349,57 +433,121 @@ void carregaBackground(char caminho[]){
 }
 
 void gravaRecord(Jogador jog){
-    Records recs = leRecords();
-    Jogador aux;
-    for(int i = 0; i < recs.cont - 1; i++){
-        if(recs.jogadores[i].pontuacao < jog.pontuacao){
-            aux = recs.jogadores[i];
-            recs.jogadores[i] = jog;
-            recs.jogadores[i+1] = aux;
+    Records recs; 
+    leRecords(&recs);
+    //Records *recs;
+    //leRecords(recs);
+    //Jogador aux;
+    if(recs.cont < 10)
+    {
+        recs.jogador[recs.cont] = jog;
+        recs.cont += 1;
+    }
+    else
+    {
+        Jogador menor_recorde;
+        menor_recorde = recs.jogador[10-1];
+        
+        if(menor_recorde.pontuacao >= jog.pontuacao)
+        {
+            return;
+        }
+        else
+        {
+            remove_posicao(&recs, 10 - 1);
+            gravaRecord(jog);
+            return;
         }
     }
-    FILE *file = fopen("record.txt", "w");
-    int k;
-    for(int i = 0; i < recs.cont - 1; i++){
-        k = 0;
-        while(recs.jogadores[i].nome[k] != '\0'){
-            fputc(recs.jogadores[i].nome[k], file);
-            k++;
-        }
-        //fputc('|', file);
-        fprintf(file, "|%d\n", recs.jogadores[i].pontuacao);
+    
+    sort(&recs);
+
+    FILE *fPtr = fopen("record.bin", "wb");
+    //int k;
+    for(int i = 0; i < recs.cont; i++){
+        fseek(fPtr, i * sizeof(Jogador), SEEK_SET);
+		fwrite(&recs.jogador[i], sizeof(Jogador), 1, fPtr);
     }
-    fclose(file);
+    fclose(fPtr);
 
 }
 
+void remove_posicao(Records *array, int posicao)
+{
+	if(array->cont == 0)
+	{
+		return;
+	}
+	else if(array->cont == 1)
+	{
+		array->cont -= 1;
+		return;
+	}
+	else
+	{
+		array->cont -= 1;
+		array->jogador[posicao] = array->jogador[array->cont];
+	}
+    
+    sort(array);
+}
+
+void sort(Records *array)
+{
+	bubble_sort(array->jogador, array->cont);
+}
+
+void bubble_sort(Jogador list[], int n)
+{
+	int i, j;
+    Jogador swap;
+
+	for(i = 0 ; i < ( n - 1 ); i++)
+	{
+		for(j = 0 ; j < n - i - 1; j++)
+		{
+			if(list[j].pontuacao < list[j+1].pontuacao)
+			{ 
+				swap = list[j];
+				list[j] = list[j+1];
+				list[j+1] = swap;
+			}
+		}
+	}
+}
+
 void recordTela(Records recs){
-    carregaBackground("img/backrecord.png");
-    struct {        
+    carregaBackground("img/background.jpg");
+    printf("%d cont",recs.cont);
+    if (recs.cont > 0)
+    {
+        
         SDL_Rect rect[10];
         SDL_Surface *textsurf[10];
         SDL_Texture *tetuta[10];
-    } Recds;
-    char texto[50] = "";
-    SDL_Color color = {0,0,0,255};
-    for(int i = 0; i < 10; i++){
-        Recds.rect[i].x = X_RECORD;
-        Recds.rect[i].y = Y_RECORD * (i+1);
-        Recds.rect[i].h = 0;
-        Recds.rect[i].w = 0;
-        
-        
-        sprintf(texto, "%d :: %s :: %d", i+1, recs.jogadores[i].nome, recs.jogadores[i].pontuacao);
-        Recds.textsurf[i] = TTF_RenderText_Solid(fonte, texto, color);
-        Recds.tetuta[i] = SDL_CreateTextureFromSurface(Game.screen.renderer, Recds.textsurf[i]);
-        SDL_RenderCopy(Game.screen.renderer, Recds.tetuta[i], NULL, &Recds.rect[i]);
-    }
 
-    SDL_Rect rect_voltar = {X_RECORD, Y_RECORD * 12, 0,0};
+        char texto[50] = "";
+        SDL_Color color = {0, 0, 0, 255};
+        for (int i = 0; i < recs.cont; i++)
+        {
+            rect[i].x = X_RECORD;
+            rect[i].y = Y_RECORD * (i + 1);
+            rect[i].h = 50;
+            rect[i].w = 150;
+            printf("5");
+            sprintf(texto, "%d :: %s :: %d", i + 1, recs.jogador[i].nome, recs.jogador[i].pontuacao);
+            //printf("%s", texto);
+            textsurf[i] = TTF_RenderText_Solid(fonte, texto, color);
+            tetuta[i] = SDL_CreateTextureFromSurface(Game.screen.renderer, textsurf[i]);
+            SDL_RenderCopy(Game.screen.renderer, tetuta[i], NULL, &rect[i]);
+            printf("7");
+        }
+    }
+    /*SDL_Rect rect_voltar = {X_RECORD, Y_RECORD * 12, 0,0};
     sprintf(texto, "VOLTAR");
     SDL_Surface *surf = TTF_RenderText_Solid(fonte, texto, color);
     SDL_Texture *textuta = SDL_CreateTextureFromSurface(Game.screen.renderer, surf);
-    SDL_RenderCopy(Game.screen.renderer, textuta, NULL, &rect_voltar);
+    SDL_RenderCopy(Game.screen.renderer, textuta, NULL, &rect_voltar);*/
     
     while(SDL_PollEvent(&event)){
         if(event.type==SDL_KEYDOWN)
@@ -408,10 +556,11 @@ void recordTela(Records recs){
             {
                 case SDLK_ESCAPE:
                     runMenu();
-                    menu.opcao = 0;
+                   // menu.opcao = 0;
+                    menu.enterPressed = 0;
                     break;
             }        
-        } else if(event.type == SDL_MOUSEBUTTONDOWN){
+        } /*else if(event.type == SDL_MOUSEBUTTONDOWN){
             if(event.button.button == SDL_BUTTON_LEFT){
                 int x = event.button.x;
                 int y = event.button.y;
@@ -419,19 +568,35 @@ void recordTela(Records recs){
                 if((x >= X_RECORD && x <= X_RECORD + 26 * 6) 
                     && (y >= Y_RECORD * 12 && y <= Y_RECORD * 12 + 26 * 6)){
                         runMenu();
-                        menu.opcao = 0;
+                        //menu.opcao = 0;
+                        menu.enterPressed = 0;
                     }
             }
-        }
-        if(!menu.opcao)
+        }*/
+        if(!menu.enterPressed)
             break;
     }
 
     
 }
 
-void opcoesTela(){
-
+void imgToWindowFull(char caminho[]){
+    carregaBackground(caminho);
+    while(SDL_PollEvent(&event)){
+        if(event.type==SDL_KEYDOWN)
+        {
+            switch(event.key.keysym.sym)
+            {
+                case SDLK_ESCAPE:
+                    runMenu();
+                    //menu.opcao = 0;
+                    menu.enterPressed = 0;
+                    break;
+            }        
+        }
+        if(!menu.enterPressed)
+            break;
+    }
 }
 
 void runGame(){
