@@ -35,6 +35,19 @@
 #define MIN_RECOMPENSA 20
 #define MIN_DAMAGE 10
 
+#define TORRE_W 50
+#define TORRE_H 60
+#define X_TORRE_FIXA_INI SCREEN_W / 2
+#define X_TORRE_FIXA_FIM X_TORRE_FIXA_INI + TORRE_W
+#define Y_TORRE_FIXA_INI SCREEN_H / 6
+#define Y_TORRE_FIXA_FIM Y_TORRE_FIXA_INI + TORRE_H
+
+#define MINION_W 20
+#define MINION_H 60
+
+
+
+
 //struchs do universo
 typedef enum
 {
@@ -97,6 +110,9 @@ void sort(Records *);
 void bubble_sort(Jogador *, int);
 //void insere(Records *, Jogador);
 void remove_posicao(Records *, int);
+
+
+int colidiu(SDL_Rect, SDL_Rect);
 
 
 struct {
@@ -686,8 +702,10 @@ void runGame(){
         }
         else if(event.type == SDL_MOUSEBUTTONDOWN){
             if(event.button.button == SDL_BUTTON_LEFT){
-                int x = event.button.x;
-                int y = event.button.y;
+                SDL_Rect mouse;
+                mouse.x = event.button.x;
+                mouse.y = event.button.y;
+                mouse.h = mouse.w = 0;
                 //printf("x = %d, y = %d", x, y);
                 /*if ((x >= 424 && x <= 554) && (y >= 200 && y <= 234))
                 {
@@ -862,4 +880,19 @@ void upgrade(Tower *t, Jogador *player){
 
 void atirar(Tower t, Minion *alvo){
     
+}
+
+
+
+
+///MONITORADORES DESSA JOÇA ---------------------------------- #MERESPEITA
+
+
+int colidiu(SDL_Rect de, SDL_Rect com){
+    if ((de.x >= com.x && (de.x + de.w) <= (com.x + com.w)) 
+        && (de.y >= com.y && (de.y + de.h) <= (com.y + com.h)))
+    {
+        return 1;
+    }
+    return 0;
 }
