@@ -30,6 +30,11 @@
 #define Y_ABANDONAR_INI 270
 #define Y_ABANDONAR_FIM 300
 
+#define X_MENUL_INI 447
+#define X_MENUL_FIM 528
+#define Y_MENUL_INI 390
+#define Y_MENUL_FIM 512
+
 #define VIDA_CHEIA 1000
 #define GRANA_CHEIA 100
 #define MIN_RECOMPENSA 20
@@ -326,7 +331,7 @@ void game_init(void) {
    // gravaRecord(&recs, j);
 
 	Game.running = 1;
-    Game.state = 3;
+    Game.state = 0;
 }
 
 void gdraw(int x, int y, int h, int w, SDL_Surface *surface){
@@ -382,8 +387,8 @@ void runMenu(){
         SDL_FreeSurface(menu.cursor_img);
     }
     if(menu.enterPressed == 0){
-    SDL_RenderCopy(Game.screen.renderer, menu.img_text, NULL, NULL);
-    SDL_RenderCopy(Game.screen.renderer, menu.cursor, NULL, &menu.cursor_position);
+        SDL_RenderCopy(Game.screen.renderer, menu.img_text, NULL, NULL);
+        SDL_RenderCopy(Game.screen.renderer, menu.cursor, NULL, &menu.cursor_position);
     } else {
         if (!menu.opcao)
         {
@@ -407,12 +412,14 @@ void runMenu(){
         }
         else
         {
-            //Game.quit();
+            Game.quit();
         }
         return;
     }
     while(SDL_PollEvent(&event)){
-        
+        if(menu.enterPressed)
+            break;
+
         if(event.type == SDL_KEYDOWN){
             
             switch(event.key.keysym.sym)                    
@@ -436,29 +443,36 @@ void runMenu(){
                     }
                     break;
                 case SDLK_RETURN:
-                    if(!menu.opcao){
-                        Game.state = 1;                        
-                    }
-                    else if(menu.opcao == 1){
-                        imgToWindowFull("img/instrucoes.jpg");
-                    } else if(menu.opcao == 2){
-                        
-                        leRecords(&recs);
-                        
-                        //Records *recs;
-                        //leRecords(recs);
-                        //printf(" passou ");
-                        recordTela(recs);
-                       //imgToWindowFull("img/background.jpg");
-                    } else if(menu.opcao == 3){
-                        imgToWindowFull("img/sobre.jpg");
-                    } else{
-                        Game.quit();
-                    }
                     menu.enterPressed = 1;
                     break;                
             }    
+        } else if(event.type == SDL_MOUSEMOTION)
+        {
+            int x = event.motion.x;
+            int y = event.motion.y;
+            SDL_Rect mouse = {x, y, 0, 0};
+            SDL_Rect item_menu = {X_MENU + menu.cursor_position.w, Y_MENU, 150, Y_FONT_MENU};
+
+            for (int i = 0; i < 5; i++)
+            {
+                item_menu.y = Y_MENU + Y_FONT_MENU * i;
+                if (colidiu(mouse, item_menu))
+                {
+                    menu.opcao = i;
+                    menu.cursor_position.y = Y_MENU + Y_FONT_MENU * i;
+                }
+            }
+        } else if(event.type == SDL_MOUSEBUTTONDOWN){
+            SDL_Rect mouse = {event.button.x, event.button.y, 0, 0};
+            SDL_Rect button = {X_MENU + menu.cursor_position.w, (Y_MENU + (Y_FONT_MENU * menu.opcao)), 150, Y_FONT_MENU};
+
+            //printf(" x = %d, y = %d", x, y);
+            if (colidiu(mouse, button))
+            {
+                menu.enterPressed = 1;
+            }
         }
+        
     }
 }
 
@@ -826,10 +840,11 @@ void runGame_Over(){
         }
         else if(event.type == SDL_MOUSEBUTTONDOWN){
             if(event.button.button == SDL_BUTTON_LEFT){
-                int x = event.button.x;
-                int y = event.button.y;
-                printf(" x = %d, y = %d", x, y);
-                if ((x >= 447 && x <= 528) && (y >= 390 && y <= 412))
+                SDL_Rect mouse = {event.button.x, event.button.y, 0, 0};
+                SDL_Rect button = {X_MENUL_INI, Y_MENUL_INI, X_MENUL_FIM - X_MENUL_INI, Y_MENUL_FIM - Y_MENUL_INI};
+                
+               //printf(" x = %d, y = %d", x, y);
+                if (colidiu(mouse, button))
                 {
                     Game.state = 0;
                 }
@@ -856,6 +871,7 @@ void runGame_Over(){
                 Game.jogador.pontuacao = 0;
                 Game.jogador.grana = GRANA_CHEIA;
             }
+            
             break;
         }
     }

@@ -1,5 +1,8 @@
 {
     "files.associations": {
-        "torre.c": "cpp"
+        "torre.c": "cpp",
+        "sdl_keycode.h": "c",
+        "sdl_events.h": "c",
+        "sdl_rect.h": "c"
     }
 }
