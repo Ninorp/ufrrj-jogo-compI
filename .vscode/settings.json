@@ -3,6 +3,7 @@
         "torre.c": "cpp",
         "sdl_keycode.h": "c",
         "sdl_events.h": "c",
-        "sdl_rect.h": "c"
+        "sdl_rect.h": "c",
+        "sdl_image.h": "c"
     }
 }

@@ -6,6 +6,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <time.h>
 #include <string.h>
+#include <math.h>
 
 #define FPS 30
 #define MS_PER_FRAME 1000 / FPS
@@ -37,12 +38,17 @@
 
 #define VIDA_CHEIA 1000
 #define GRANA_CHEIA 100
-#define MIN_RECOMPENSA 20
+#define MIN_RECOMPENSA 5
 #define MIN_DAMAGE 10
 
+#define X_BARRA_LATERAL SCREEN_W / 1.5
+#define BARRA_LATERAL_W SCREEN_W - X_BARRA_LATERAL
+#define BARRA_LATERAL_H SCREEN_H
+
 #define TORRE_W 50
-#define TORRE_H 60
-#define X_TORRE_FIXA_INI SCREEN_W / 2
+#define TORRE_H 50
+#define TORRE_PRECO_MIN 2
+#define X_TORRE_FIXA_INI SCREEN_W / 1.5 + 50
 #define X_TORRE_FIXA_FIM X_TORRE_FIXA_INI + TORRE_W
 #define Y_TORRE_FIXA_INI SCREEN_H / 6
 #define Y_TORRE_FIXA_FIM Y_TORRE_FIXA_INI + TORRE_H
@@ -50,7 +56,12 @@
 #define MINION_W 20
 #define MINION_H 60
 
+#define MAX_MINIONS_POR_ORDA 120
+#define MAX_LEVEL 24
+#define MIN_MINIONS_POR_ORDA 6
 
+#define PATH_CIRCLE "img/circle.png"
+#define TOWER_PNG_1 "img/fortress.png"
 
 
 //struchs do universo
@@ -118,7 +129,11 @@ void remove_posicao(Records *, int);
 
 
 int colidiu(SDL_Rect, SDL_Rect);
+int podeAddTower(SDL_Rect);
 
+void pitagoras(int *a, int *b, int *c);
+float velocidadeAtual(float, float, float);
+float posicaoAtual(float so, float vo, float a, float t);
 
 struct {
 	// define "attributes"
@@ -183,23 +198,20 @@ typedef struct life{
 
 //fim de vida
 
-//orda
-typedef struct orda{
-    int qtd;
-    float level;
-} Orda;
+
 
 //fim orda
 
 //Towers
 
 typedef struct tower{
-    SDL_Rect srcrect, dstrect;
-    int dano;
+    //SDL_Rect srcrect, dstrect;
+    int damage;
     float cost;
     float upgrade;
     float intervalo_disparo;
     float range;
+    SDL_Surface *icon, *circle;
 } Tower;
 
 //minions
@@ -210,6 +222,15 @@ typedef struct minion{
 	int damage;
 
 }Minion;
+
+//orda
+typedef struct orda{
+    int qtd;
+    float level;
+    Minion *minion;
+} Orda;
+
+
 
 //metodos dos elementos
 void atirar(Tower t, Minion *alvo);
@@ -334,6 +355,8 @@ void game_init(void) {
     Game.state = 0;
 }
 
+
+
 void gdraw(int x, int y, int h, int w, SDL_Surface *surface){
     SDL_Rect srcRect;
     SDL_Rect destRect;
@@ -356,6 +379,7 @@ void refresh(){
 }
 
 void clear(){
+    SDL_SetRenderDrawColor(Game.screen.renderer,0,0,0,255);
     SDL_RenderClear(Game.screen.renderer);
 }
 void game_quit(void) {
@@ -691,48 +715,141 @@ void imgToWindowFull(char caminho[]){
     }
 }
 
-void runGame(){
-    if(Game.resume){
-        Game.resume = 0;
-    } else{
-        //iniciar o jogo
-        
+struct 
+{
+    int cont;
+    Tower tower[1000];
+} ARRAYTOWER;
+
+void runGame()
+{
+   // if (Game.resume)
+    {
+        //Game.resume = 0;
     }
-    if(Game.jogador.vida){
+   // else
+    {
+        //iniciar o jogo
+        Tower towersFixas[3];
+        SDL_Surface *img = IMG_Load("img/back.png");
+        // printf("1");
+        gdraw(X_BARRA_LATERAL, 0, BARRA_LATERAL_H, BARRA_LATERAL_W, img);
+        SDL_FreeSurface(img);
+        towersFixas[0].icon = IMG_Load(TOWER_PNG_1);
+        towersFixas[1].icon = IMG_Load(TOWER_PNG_1);
+        towersFixas[2].icon = IMG_Load(TOWER_PNG_1);
+        //gdraw(X_TORRE_FIXA_INI, Y_TORRE_FIXA_INI + (TORRE_H * 0), 50, 50, towersFixas[0].icon);
+        for (int i = 1; i < 4; i++)
+        {
+            towersFixas[i - 1].circle = IMG_Load(PATH_CIRCLE);
+            towersFixas[i - 1].damage = MIN_DAMAGE * i * i;
+            towersFixas[i - 1].cost = 20 * i * i;
+            towersFixas[i - 1].upgrade = 50;
+            towersFixas[i - 1].intervalo_disparo = 3;
+            towersFixas[i - 1].range = 20;
+            gdraw(X_TORRE_FIXA_INI, Y_TORRE_FIXA_INI + (TORRE_H * i - 1), TORRE_H, TORRE_W, towersFixas[i - 1].icon);
+            SDL_FreeSurface(towersFixas[i - 1].icon);
+            //printf("i");
+        }
+    }
+    if (Game.jogador.vida)
+    {
         //MANDA OS MINIONS E O CARAMBA A 4
-    } else {
+    }
+    else
+    {
         //DEU BLAYBEYDE PARA O CARINHA, GAME OVER, BABY
+        Game.state = 4;
+        return;
     }
     while (SDL_PollEvent(&event))
     {
-        if(event.type==SDL_KEYDOWN)
+        if (event.type == SDL_KEYDOWN)
         {
-            switch(event.key.keysym.sym)
+            switch (event.key.keysym.sym)
             {
-                case SDLK_ESCAPE:
-                    Game.state = 2;                
-                    break;
-            }        
+            case SDLK_ESCAPE:
+                Game.state = 2;
+                break;
+            }
         }
-        else if(event.type == SDL_MOUSEBUTTONDOWN){
-            if(event.button.button == SDL_BUTTON_LEFT){
+        else if (event.type == SDL_MOUSEBUTTONDOWN)
+        {
+            if (event.button.button == SDL_BUTTON_LEFT)
+            {
                 SDL_Rect mouse;
                 mouse.x = event.button.x;
                 mouse.y = event.button.y;
                 mouse.h = mouse.w = 0;
-                //printf("x = %d, y = %d", x, y);
-                /*if ((x >= 424 && x <= 554) && (y >= 200 && y <= 234))
-                {
-                    Game.state = 1;
-                }*/
             }
         }
-        if(Game.state != 1)
+        else if (event.type == SDL_MOUSEMOTION)
+        {
+            int x = event.motion.x;
+            int y = event.motion.y;
+            SDL_Rect mouse = {x, y, 0, 0};
+            SDL_Rect item_towers = {X_TORRE_FIXA_INI, Y_TORRE_FIXA_INI, TORRE_W, TORRE_H};
+
+            if (event.motion.state == SDL_PRESSED)
+            {
+                /* code */
+                printf("1");
+                for (int i = 0; i < 3; i++)
+                {
+                    item_towers.y = Y_TORRE_FIXA_INI + TORRE_H * i;
+                    if (colidiu(mouse, item_towers))
+                    {
+                        while(SDL_PollEvent(&event))
+                        {
+                            switch (event.type)
+                            {
+                            case SDL_MOUSEMOTION:
+                                if (event.motion.state == SDL_PRESSED)
+                                {
+                                    int x = event.motion.x;
+                                    int y = event.motion.y;
+                                    SDL_Rect mouseComTower = {x, y, TORRE_W, TORRE_W};
+                                    if(podeAddTower(mouseComTower))
+                                    {
+                                        gdraw()
+                                    }
+                                    else
+                                    {
+                                        /* code */
+                                    }
+                                    
+                                }
+
+                                break;
+                            default:
+                                break;
+                            }
+                        }
+                        
+                        
+
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                /* code */
+            }
+
+            for (int i = 0; i < 3; i++)
+            {
+                item_towers.y = Y_TORRE_FIXA_INI + TORRE_H * i;
+                if (colidiu(mouse, item_towers))
+                {
+                    printf("2");
+                }
+            }
+        }
+        if (Game.state != 1)
             break;
     }
 }
-
-
 
 void pauseGame(){
     
@@ -911,4 +1028,37 @@ int colidiu(SDL_Rect de, SDL_Rect com){
         return 1;
     }
     return 0;
+}
+
+int podeAddTower(SDL_Rect mouseComTower){
+
+}
+
+
+
+
+///CAUCULOS MATEMÁTICOS E FÍSICOS ------------
+
+void pitagoras(int *a, int *b, int *c){
+    if(*a == NULL)
+    {
+        /* code: PITÁBORAS PARA A */
+    }
+    else if(*b == NULL)
+    {
+        /* code: PITÁGORAS PARA B */
+    }
+    else
+    {
+        /* code PITÁBORAS PARA C*/
+    }
+    
+}
+
+float velocidadeAtual(float vo, float a, float t){
+    return vo + a * t;
+}
+
+float posicaoAtual(float so, float vo, float a, float t){
+    return so + vo * t + (a*t) / 2;
 }
