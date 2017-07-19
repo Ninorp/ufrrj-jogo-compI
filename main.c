@@ -5,6 +5,7 @@
 #include <SDL2/SDL_mixer.h>
 #include <SDL2/SDL_ttf.h>
 #include <time.h>
+#include <string.h>
 
 #define FPS 30
 #define MS_PER_FRAME 1000 / FPS
@@ -14,7 +15,7 @@
 #define SCREEN_SCALE 1
 #define SCREEN_NAME "O  J O G O"
 
-#define Y_FONT 16
+#define Y_FONT 18
 #define Y_FONT_MENU 39
 #define Y_MENU 278
 #define X_MENU 650
@@ -28,6 +29,24 @@
 #define X_ABANDONAR_FIM 580
 #define Y_ABANDONAR_INI 270
 #define Y_ABANDONAR_FIM 300
+
+#define VIDA_CHEIA 1000
+#define GRANA_CHEIA 100
+#define MIN_RECOMPENSA 20
+#define MIN_DAMAGE 10
+
+#define TORRE_W 50
+#define TORRE_H 60
+#define X_TORRE_FIXA_INI SCREEN_W / 2
+#define X_TORRE_FIXA_FIM X_TORRE_FIXA_INI + TORRE_W
+#define Y_TORRE_FIXA_INI SCREEN_H / 6
+#define Y_TORRE_FIXA_FIM Y_TORRE_FIXA_INI + TORRE_H
+
+#define MINION_W 20
+#define MINION_H 60
+
+
+
 
 //struchs do universo
 typedef enum
@@ -93,9 +112,12 @@ void bubble_sort(Jogador *, int);
 void remove_posicao(Records *, int);
 
 
+int colidiu(SDL_Rect, SDL_Rect);
+
+
 struct {
 	// define "attributes"
-	int running, state;
+	int running, state, resume;
 	struct {
 		unsigned int w;
 		unsigned int h;
@@ -108,7 +130,7 @@ struct {
 	void (*init)(void);
 	void (*quit)(void);
 } Game = {
-    0,0,
+    0,0,0,
 	{
 		SCREEN_SCALE*SCREEN_W,
 		SCREEN_SCALE*SCREEN_H,
@@ -116,7 +138,7 @@ struct {
 		NULL,
 		NULL
 	},
-    {1000,1000,0, '\0'},
+    {VIDA_CHEIA,GRANA_CHEIA,0, '\0'},
 	game_init,
 	game_quit
 };
@@ -215,7 +237,7 @@ int main(int argc, char** argv)
         clear();
         if(event.type == SDL_QUIT)
         {
-            Game.quit();
+            Game.running = 0;
         }
         switch (Game.state){
             case 0:
@@ -291,8 +313,9 @@ void game_init(void) {
 		SDL_RENDERER_ACCELERATED|SDL_RENDERER_PRESENTVSYNC
 	);
     TTF_Init();
-    fonte = TTF_OpenFont("Arial.ttf", Y_FONT);
+    fonte = TTF_OpenFont("FRIZQT.TTF", Y_FONT);
     musica=Mix_LoadMUS("music/menu.mp3");
+    
 
    // Jogador j = {0,0,50, "2CARINHA"};
     //for(int i = 0; i < 10; i++)
@@ -303,7 +326,7 @@ void game_init(void) {
    // gravaRecord(&recs, j);
 
 	Game.running = 1;
-    Game.state = 0;
+    Game.state = 3;
 }
 
 void gdraw(int x, int y, int h, int w, SDL_Surface *surface){
@@ -336,7 +359,7 @@ void game_quit(void) {
 
 	Game.screen.window = NULL;
 	Game.screen.renderer = NULL;
-
+    
 	SDL_Quit();
     exit(-1);
 }
@@ -568,7 +591,7 @@ void bubble_sort(Jogador list[], int n)
 }
 
 void recordTela(Records recs){
-    carregaBackground("img/background.jpg");
+    carregaBackground("img/backrecord.png");
     //printf("%d cont",recs.cont);
     if (recs.cont > 0)
     {
@@ -587,7 +610,7 @@ void recordTela(Records recs){
            // printf("5");
             sprintf(texto, "%d :: %s :: %d", i + 1, recs.jogador[i].nome, recs.jogador[i].pontuacao);
             //printf("%s", texto);
-            textsurf = TTF_RenderText_Solid(fonte, texto, color);
+            textsurf = TTF_RenderUTF8_Solid(fonte, texto, color);
             tempTexture = SDL_CreateTextureFromSurface(Game.screen.renderer, textsurf);
             SDL_QueryTexture(tempTexture, NULL, NULL, &texW, &texH);
             SDL_DestroyTexture(tempTexture);
@@ -600,7 +623,7 @@ void recordTela(Records recs){
     }
     /*SDL_Rect rect_voltar = {X_RECORD, Y_RECORD * 12, 0,0};
     sprintf(texto, "VOLTAR");
-    SDL_Surface *surf = TTF_RenderText_Solid(fonte, texto, color);
+    SDL_Surface *surf = TTF_RenderUTF8_Solid(fonte, texto, color);
     SDL_Texture *textuta = SDL_CreateTextureFromSurface(Game.screen.renderer, surf);
     SDL_RenderCopy(Game.screen.renderer, textuta, NULL, &rect_voltar);*/
     
@@ -655,7 +678,19 @@ void imgToWindowFull(char caminho[]){
 }
 
 void runGame(){
-     while(SDL_PollEvent(&event)){
+    if(Game.resume){
+        Game.resume = 0;
+    } else{
+        //iniciar o jogo
+        
+    }
+    if(Game.jogador.vida){
+        //MANDA OS MINIONS E O CARAMBA A 4
+    } else {
+        //DEU BLAYBEYDE PARA O CARINHA, GAME OVER, BABY
+    }
+    while (SDL_PollEvent(&event))
+    {
         if(event.type==SDL_KEYDOWN)
         {
             switch(event.key.keysym.sym)
@@ -667,8 +702,10 @@ void runGame(){
         }
         else if(event.type == SDL_MOUSEBUTTONDOWN){
             if(event.button.button == SDL_BUTTON_LEFT){
-                int x = event.button.x;
-                int y = event.button.y;
+                SDL_Rect mouse;
+                mouse.x = event.button.x;
+                mouse.y = event.button.y;
+                mouse.h = mouse.w = 0;
                 //printf("x = %d, y = %d", x, y);
                 /*if ((x >= 424 && x <= 554) && (y >= 200 && y <= 234))
                 {
@@ -680,6 +717,8 @@ void runGame(){
             break;
     }
 }
+
+
 
 void pauseGame(){
     
@@ -702,7 +741,7 @@ void pauseGame(){
             if(event.button.button == SDL_BUTTON_LEFT){
                 int x = event.button.x;
                 int y = event.button.y;
-                printf("x = %d, y = %d", x, y);
+               // printf("x = %d, y = %d", x, y);
                 if ((x >= X_VOLTA_INI && x <= X_VOLTA_FIM) && (y >= Y_VOLTA_INI && y <= Y_VOLTA_FIM))
                 {
                     Game.state = 1;
@@ -715,14 +754,111 @@ void pauseGame(){
                 }
             }
         }
-        if(Game.state != 2)
+        if(Game.state != 2){
+            if(Game.state == 1){
+                Game.resume = 1;
+            }
             break;
+        }
+            
     }
 }
 
 
-void runGame_Over(){
+ char *composition;
+ Sint32 cursor;
+ Sint32 selection_len;
 
+
+void runGame_Over(){
+    if(SDL_IsTextInputActive == SDL_FALSE){
+        SDL_StartTextInput();
+        //Game.jogador.pontuacao = 100;
+    }
+    carregaBackground("img/gameover.png");
+
+    SDL_Surface *textsurf;
+    SDL_Texture *tempTexture;
+    char texto[50];
+
+    SDL_Color color = {255, 255, 255, 255};
+    int texW = 0;
+    int texH = 0;
+
+    textsurf = TTF_RenderUTF8_Solid(fonte, Game.jogador.nome, color);
+    tempTexture = SDL_CreateTextureFromSurface(Game.screen.renderer, textsurf);
+    SDL_QueryTexture(tempTexture, NULL, NULL, &texW, &texH);
+    SDL_DestroyTexture(tempTexture);
+    gdraw(342, 248, texH, texW, textsurf);
+    //Game.jogador.pontuacao = 95;
+    sprintf(texto, "Sua pontuação: %d", Game.jogador.pontuacao);
+    textsurf = TTF_RenderUTF8_Solid(fonte, texto, color);
+    
+    tempTexture = SDL_CreateTextureFromSurface(Game.screen.renderer, textsurf);
+    SDL_QueryTexture(tempTexture, NULL, NULL, &texW, &texH);
+    SDL_DestroyTexture(tempTexture);
+    gdraw(339, 280, texH, texW, textsurf);
+
+    SDL_FreeSurface(textsurf);
+
+    
+
+    while(SDL_PollEvent(&event)){
+        if(event.type==SDL_KEYDOWN)
+        {
+            switch(event.key.keysym.sym)
+            {
+                case SDLK_ESCAPE:
+                    Game.state = 0;                
+                    break;
+                /*case SDLK_BACKSPACE:
+                    
+                    break;*/
+            }
+            if(event.key.keysym.sym == SDLK_BACKSPACE){
+                size_t tam = strlen(Game.jogador.nome);
+                if (tam > 0)
+                {
+                    Game.jogador.nome[tam - 1] = '\0';
+                }
+            }
+                    
+        }
+        else if(event.type == SDL_MOUSEBUTTONDOWN){
+            if(event.button.button == SDL_BUTTON_LEFT){
+                int x = event.button.x;
+                int y = event.button.y;
+                printf(" x = %d, y = %d", x, y);
+                if ((x >= 447 && x <= 528) && (y >= 390 && y <= 412))
+                {
+                    Game.state = 0;
+                }
+            }
+        } else if(event.type == SDL_TEXTINPUT){
+            strcat(Game.jogador.nome, event.text.text);
+        } else if(event.type == SDL_TEXTEDITING){
+            composition = event.edit.text;
+            cursor = event.edit.start;
+            selection_len = event.edit.length;
+            strcmp(Game.jogador.nome, composition);
+            
+        }
+
+        if (Game.state != 3)
+        {
+            SDL_StopTextInput();
+            if(strlen(Game.jogador.nome) > 0){
+                Records recs;
+                leRecords(&recs);
+                
+                gravaRecord(&recs, Game.jogador);
+                Game.jogador.vida = VIDA_CHEIA;
+                Game.jogador.pontuacao = 0;
+                Game.jogador.grana = GRANA_CHEIA;
+            }
+            break;
+        }
+    }
 }
 
 
@@ -744,4 +880,19 @@ void upgrade(Tower *t, Jogador *player){
 
 void atirar(Tower t, Minion *alvo){
     
+}
+
+
+
+
+///MONITORADORES DESSA JOÇA ---------------------------------- #MERESPEITA
+
+
+int colidiu(SDL_Rect de, SDL_Rect com){
+    if ((de.x >= com.x && (de.x + de.w) <= (com.x + com.w)) 
+        && (de.y >= com.y && (de.y + de.h) <= (com.y + com.h)))
+    {
+        return 1;
+    }
+    return 0;
 }
