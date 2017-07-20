@@ -4,6 +4,15 @@
         "sdl_keycode.h": "c",
         "sdl_events.h": "c",
         "sdl_rect.h": "c",
-        "sdl_image.h": "c"
+        "sdl_image.h": "c",
+        "elementosgame.h": "c",
+        "sdl_surface.h": "c",
+        "begin_code.h": "c",
+        "stdio.h": "c",
+        "sdl_rwops.h": "c",
+        "sdl_render.h": "c",
+        "sdl_touch.h": "c",
+        "math.h": "c",
+        "sdl_ttf.h": "c"
     }
 }
