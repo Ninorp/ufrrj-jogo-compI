@@ -240,7 +240,7 @@ typedef struct{
 	Life life;
     SDL_Rect srcrect, dstrect;
     SDL_Surface *spritesheet;
-	int damage, aceleracao, morreu;
+	int damage, aceleracao, morreu, indexcurva;
 
 }Minion;
 
@@ -1246,7 +1246,7 @@ void criaMinions(){
             aMinion.minion[j].damage = MIN_DAMAGE * (i+1);  
             aMinion.minion[j].dstrect.x = x_start;
             aMinion.minion[j].dstrect.y = random_int(Y_PORTAL, Y_PORTAL + PORTAL_H);
-            aMinion.minion[j].morreu = 0;
+            aMinion.minion[j].morreu = aMinion[j].indexcurva = 0;
             //aMinion.minion[j].aceleracao = 
             x_start -= 15;
         }
@@ -1285,19 +1285,55 @@ void movimentaMinions(){
         }
             
         if(!aMinion.minion[i].morreu){
-            int x = aMinion.minion[i].dstrect.x;
-            int y = aMinion.minion[i].dstrect.y;
+            int x = &(aMinion.minion[i].dstrect.x);
+            int y = &(aMinion.minion[i].dstrect.y);
+            int indexcurva = &(aMinion.minion[i].indexcurva);
 
-            if(/* condition */)
+            if(x < aCurva.curva[indexcurva].x)
             {
-                /* code */
+                x++;
             }
-            else
+            else if(x < aCurva.curva[indexcurva].limite 
+                && aCurva.curva[indexcurva].x == aCurva.curva[indexcurva].xOry )
             {
-                /* code */
+                int escolha = random_int(0,2);
+                if(escolha)
+                    x++;
+                else{
+                    y++;
+                    indexcurva++;
+                }
+                    
+            } else if(y > aCurva.curva[indexcurva].y)
+            {
+                y--;
             }
-            
-
+            else if(y > aCurva.curva[indexcurva].limite 
+                && aCurva.curva[indexcurva].y == aCurva.curva[indexcurva].xOry )
+            {
+                int escolha = random_int(0,2);
+                if(escolha)
+                    y--;
+                else{
+                    x++;
+                    indexcurva++;
+                }
+                    
+            } else if(y < aCurva.curva[indexcurva].y)
+            {
+                y++;
+            }
+            else if(y < aCurva.curva[indexcurva].limite 
+                && aCurva.curva[indexcurva].y == aCurva.curva[indexcurva].xOry )
+            {
+                int escolha = random_int(0,2);
+                if(escolha)
+                    y++;
+                else{
+                    x++;
+                    indexcurva++;
+                }                    
+            }
         }
 
     }
