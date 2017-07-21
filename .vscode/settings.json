@@ -13,6 +13,8 @@
         "sdl_render.h": "c",
         "sdl_touch.h": "c",
         "math.h": "c",
-        "sdl_ttf.h": "c"
+        "sdl_ttf.h": "c",
+        "sdl_video.h": "c",
+        "stdio2.h": "c"
     }
 }
