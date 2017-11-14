@@ -6,12 +6,9 @@
 #include <SDL2/SDL_ttf.h>
 #include <time.h>
 #include <string.h>
-<<<<<<< HEAD
-=======
 #include <math.h>
->>>>>>> origin/master
 
-#define FPS 30
+#define FPS 60
 #define MS_PER_FRAME 1000 / FPS
 
 #define SCREEN_W 973
@@ -34,16 +31,6 @@
 #define Y_ABANDONAR_INI 270
 #define Y_ABANDONAR_FIM 300
 
-<<<<<<< HEAD
-#define VIDA_CHEIA 1000
-#define GRANA_CHEIA 100
-#define MIN_RECOMPENSA 20
-#define MIN_DAMAGE 10
-
-#define TORRE_W 50
-#define TORRE_H 60
-#define X_TORRE_FIXA_INI SCREEN_W / 2
-=======
 #define X_MENUL_INI 447
 #define X_MENUL_FIM 528
 #define Y_MENUL_INI 390
@@ -58,25 +45,16 @@
 #define BARRA_LATERAL_W SCREEN_W - X_BARRA_LATERAL
 #define BARRA_LATERAL_H SCREEN_H
 
-#define TORRE_W 25
+#define TORRE_W 64
 #define TORRE_W_FIXA 150
 #define TORRE_H_FIXA 50
-#define TORRE_H 50
+#define TORRE_H 64
 #define TORRE_PRECO_MIN 2
 #define X_TORRE_FIXA_INI SCREEN_W / 1.5 + 50
->>>>>>> origin/master
 #define X_TORRE_FIXA_FIM X_TORRE_FIXA_INI + TORRE_W
 #define Y_TORRE_FIXA_INI SCREEN_H / 6
 #define Y_TORRE_FIXA_FIM Y_TORRE_FIXA_INI + TORRE_H
 
-<<<<<<< HEAD
-#define MINION_W 20
-#define MINION_H 60
-
-
-
-
-=======
 #define MINION_W 56
 #define MINION_H 43
 
@@ -93,7 +71,6 @@
 #define MINION_PNG_N "img/rsz_minion_%d.png"
 #define Y_PORTAL 284
 #define PORTAL_H 22
->>>>>>> origin/master
 //struchs do universo
 typedef enum {
     MENU = 0,
@@ -142,6 +119,7 @@ void game_quit(void);
 void gdraw(int x, int y, int h, int w, SDL_Surface *surface);
 void mGdraw(SDL_Rect srcRect, SDL_Rect destRect, SDL_Surface *surface);
 void gdrawProsMinions(SDL_Rect imgRect, SDL_Rect positionRect, SDL_Surface *);
+void gdrawPrasTowers(SDL_Rect imgRect, SDL_Rect positionRect, SDL_Surface *, double angle);
 void refresh();
 void clear();
 void runGame();
@@ -162,22 +140,8 @@ void descobreWH(int *, int *, SDL_Surface *);
 int colidiu(SDL_Rect, SDL_Rect);
 int podeAddTower(SDL_Rect);
 int random_int(int min, int max);
+float distancia(SDL_Rect, SDL_Rect);
 
-<<<<<<< HEAD
-int colidiu(SDL_Rect, SDL_Rect);
-
-
-struct {
-	// define "attributes"
-	int running, state, resume;
-	struct {
-		unsigned int w;
-		unsigned int h;
-		const char* name;
-		SDL_Window* window;
-		SDL_Renderer* renderer;
-	} screen;
-=======
 void pitagoras(int *a, int *b, int *c);
 float velocidadeAtual(float, float, float);
 float posicaoAtual(float so, float vo, float a, float t);
@@ -194,26 +158,11 @@ struct
         SDL_Window *window;
         SDL_Renderer *renderer;
     } screen;
->>>>>>> origin/master
     Jogador jogador;
     // define "methods"
     void (*init)(void);
     void (*quit)(void);
 } Game = {
-<<<<<<< HEAD
-    0,0,0
-	{
-		SCREEN_SCALE*SCREEN_W,
-		SCREEN_SCALE*SCREEN_H,
-		SCREEN_NAME,
-		NULL,
-		NULL
-	},
-    {VIDA_CHEIA,GRANA_CHEIA,0, '\0'},
-	game_init,
-	game_quit
-};
-=======
     0, 0, 0, {SCREEN_SCALE * SCREEN_W, SCREEN_SCALE *SCREEN_H, SCREEN_NAME, NULL, NULL}, {VIDA_CHEIA, GRANA_CHEIA, 0, '\0'}, game_init, game_quit};
 
 typedef struct
@@ -228,7 +177,6 @@ typedef struct
 } ARRAYCURVA;
 
 ARRAYCURVA aCurva;
->>>>>>> origin/master
 
 /*typedef struct{
     int cont;
@@ -244,7 +192,10 @@ Menu menu;
 SDL_Texture *mTexture;
 Mix_Music *musica;
 //Mix_Music* fase;
-Mix_Chunk *explosao;
+Mix_Chunk *tiro_catap;
+Mix_Chunk *tiro_flecha;
+Mix_Chunk *morte_minion;
+Mix_Chunk *passouM;
 
 SDL_Event event;
 
@@ -272,11 +223,12 @@ Life lifeModelo;
 typedef struct tower
 {
     //SDL_Rect srcrect, dstrect;
-    int x, y, indeximg;
+    int x, y, indeximg, spriteindex;
     int damage;
+    double angle;
     float cost;
     float upgrade;
-    float intervalo_disparo;
+    int intervalo_disparo, intervalo_save;
     float range;
     SDL_Surface *icon, *circle;
 } Tower;
@@ -325,7 +277,7 @@ void spotarTowers();
 //int endRecs;
 
 //MAIN --------------------------------------------------
-
+int passaIntro = 0;
 int main(int argc, char **argv)
 {
     aTower.cont = 0;
@@ -367,7 +319,7 @@ int main(int argc, char **argv)
         aCurva.curva[4].xOry = 680;
         aCurva.curva[4].limite = 680;
     }
-
+    
     while (Game.running) //rodar enquanto nao for para encerrar :)
     {
         unsigned
@@ -381,10 +333,18 @@ int main(int argc, char **argv)
         switch (Game.state)
         {
         case 0:
+            
             runMenu();
             break;
         case 1:
-            runGame();
+            if(passaIntro > 0){
+                char path[50];
+                sprintf(path, "img/HISTORIA_%d.png", (int)passaIntro / 200);
+                imgToWindowFull(path);
+                passaIntro--;
+            } else {
+                runGame();
+            }
             break;
         case 2:
             pauseGame();
@@ -449,13 +409,11 @@ void game_init(void)
         SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     TTF_Init();
     fonte = TTF_OpenFont("FRIZQT.TTF", Y_FONT);
-<<<<<<< HEAD
-    musica=Mix_LoadMUS("music/menu.mp3");
-    
-=======
     musica = Mix_LoadMUS("music/menu.mp3");
->>>>>>> origin/master
-
+    tiro_catap = Mix_LoadWAV("wav/explosion.wav");
+    tiro_flecha = Mix_LoadWAV("wav/flecha.wav");
+    morte_minion = Mix_LoadWAV("wav/recompensa.wav");
+    passouM = Mix_LoadWAV("wav/minionpassou.wav");
     // Jogador j = {0,0,50, "2CARINHA"};
     //for(int i = 0; i < 10; i++)
     // Records recs;
@@ -464,13 +422,8 @@ void game_init(void)
     // printf("->2");
     // gravaRecord(&recs, j);
 
-<<<<<<< HEAD
-	Game.running = 1;
-    Game.state = 3;
-=======
     Game.running = 1;
     Game.state = 0;
->>>>>>> origin/master
 }
 
 void gdraw(int x, int y, int h, int w, SDL_Surface *surface)
@@ -498,12 +451,19 @@ void mGdraw(SDL_Rect srcRect, SDL_Rect destRect, SDL_Surface *surface)
         SDL_RenderCopy(Game.screen.renderer, mTexture, NULL, NULL);
     //printf("FOI AQUI5 ");
     SDL_DestroyTexture(mTexture);
-    //printf(" saiu ");
+
 }
 
 void gdrawProsMinions(SDL_Rect imgRect, SDL_Rect positionRect, SDL_Surface *spritesheet)
 {
     mGdraw(imgRect, positionRect, spritesheet);
+}
+
+void gdrawPrasTowers(SDL_Rect imgRect, SDL_Rect positionRect, SDL_Surface *img, double angle)
+{
+    mTexture = SDL_CreateTextureFromSurface(Game.screen.renderer, img);
+    SDL_RenderCopyEx(Game.screen.renderer, mTexture, &imgRect, &positionRect, angle, NULL, SDL_FLIP_NONE);
+    SDL_DestroyTexture(mTexture);
 }
 
 void refresh()
@@ -521,17 +481,10 @@ void game_quit(void)
     SDL_DestroyRenderer(Game.screen.renderer);
     SDL_DestroyWindow(Game.screen.window);
 
-<<<<<<< HEAD
-	Game.screen.window = NULL;
-	Game.screen.renderer = NULL;
-    
-	SDL_Quit();
-=======
     Game.screen.window = NULL;
     Game.screen.renderer = NULL;
 
     SDL_Quit();
->>>>>>> origin/master
     exit(-1);
 }
 
@@ -571,6 +524,7 @@ void runMenu()
             Game.jogador.nome[0] = '\0';
             aMinion.qtd = 0;
             printf("resetei");
+            passaIntro = 600;
         }
         else if (menu.opcao == 1)
         {
@@ -786,23 +740,6 @@ void bubble_sort(Jogador list[], int n)
     int i, j;
     Jogador swap;
 
-<<<<<<< HEAD
-	for(i = 0 ; i < ( n - 1 ); i++)
-	{
-		for(j = 0 ; j < n - i - 1; j++)
-		{
-			if(list[j].pontuacao < list[j+1].pontuacao)
-			{ 
-				swap = list[j];
-				list[j] = list[j+1];
-				list[j+1] = swap;
-			}
-		}
-	}
-}
-
-void recordTela(Records recs){
-=======
     for (i = 0; i < (n - 1); i++)
     {
         for (j = 0; j < n - i - 1; j++)
@@ -819,7 +756,6 @@ void recordTela(Records recs){
 
 void recordTela(Records recs)
 {
->>>>>>> origin/master
     carregaBackground("img/backrecord.png");
     //printf("%d cont",recs.cont);
     if (recs.cont > 0)
@@ -838,15 +774,8 @@ void recordTela(Records recs)
             // printf("5");
             sprintf(texto, "%d :: %s :: %d", i + 1, recs.jogador[i].nome, recs.jogador[i].pontuacao);
             //printf("%s", texto);
-<<<<<<< HEAD
-            textsurf = TTF_RenderUTF8_Solid(fonte, texto, color);
-            tempTexture = SDL_CreateTextureFromSurface(Game.screen.renderer, textsurf);
-            SDL_QueryTexture(tempTexture, NULL, NULL, &texW, &texH);
-            SDL_DestroyTexture(tempTexture);
-=======
             textsurf = TTF_RenderUTF8_Blended(fonte, texto, color);
             descobreWH(&texW, &texH, textsurf);
->>>>>>> origin/master
             //tetuta[i] = SDL_CreateTextureFromSurface(Game.screen.renderer, textsurf[i]);
             //SDL_RenderCopy(Game.screen.renderer, tetuta[i], NULL, &rect[i]);
             gdraw(X_RECORD, Y_RECORD + (texH * (i + 1)), texH, texW, textsurf);
@@ -911,23 +840,7 @@ void imgToWindowFull(char caminho[])
     }
 }
 
-<<<<<<< HEAD
-void runGame(){
-    if(Game.resume){
-        Game.resume = 0;
-    } else{
-        //iniciar o jogo
-        
-    }
-    if(Game.jogador.vida){
-        //MANDA OS MINIONS E O CARAMBA A 4
-    } else {
-        //DEU BLAYBEYDE PARA O CARINHA, GAME OVER, BABY
-    }
-    while (SDL_PollEvent(&event))
-    {
-        if(event.type==SDL_KEYDOWN)
-=======
+
 void spotarMapa();
 
 void spotarMapa()
@@ -935,6 +848,52 @@ void spotarMapa()
     SDL_Surface *mapa = IMG_Load("img/mapa.png");
     gdraw(0, 0, 483, 700, mapa);
     SDL_FreeSurface(mapa);
+}
+
+void mataEles(Tower *t);
+void mataEles(Tower *t)
+{
+    float d_aux = t->range;
+    int i_aux = -1;
+    SDL_Rect daTorre = {t->x, t->y, TORRE_W, TORRE_H};
+    for (int i = 0; i < aMinion.qtd; i++)
+    {
+        Minion *m = &(aMinion.minion[i]);
+        if (m->morreu == 0 && m->life.cont > 0)
+        {
+
+            float d = distancia(daTorre, m->dstrect);
+            //printf("entrei");
+            if (d < t->range)
+            {
+                if (d < d_aux)
+                {
+                    d_aux = d;
+                    i_aux = i;
+                }
+
+                //printf("entrei2");
+            }
+        }
+    }
+    if (t->intervalo_disparo > t->intervalo_save)
+    {
+        t->intervalo_save = t->intervalo_disparo;
+    }
+    if (t->intervalo_disparo != 0)
+    {
+        t->intervalo_disparo--;
+    }
+    if (i_aux == -1)
+        return;
+
+    Minion *m = &(aMinion.minion[i_aux]);
+    t->angle = (atan2(m->dstrect.x - daTorre.x, m->dstrect.y - daTorre.y) * ((-180) / 3.14159265));
+    if (t->intervalo_disparo == 0)
+    {
+        t->intervalo_disparo = t->intervalo_save;
+        atirar(*t, m);
+    }
 }
 
 void spotarDadosJogador();
@@ -952,7 +911,7 @@ void spotarDadosJogador()
         // printf("5");
         sprintf(texto, "Pontuação: %d", Game.jogador.pontuacao);
         //printf("%s", texto);
-        textsurf = TTF_RenderUTF8_Solid(fonte, texto, color);
+        textsurf = TTF_RenderUTF8_Blended(fonte, texto, color);
         descobreWH(&texW, &texH, textsurf);
         //printf("\nH = %d e W = %d\n", texH, texW);
         //tetuta[i] = SDL_CreateTextureFromSurface(Game.screen.renderer, textsurf[i]);
@@ -974,7 +933,7 @@ void spotarDadosJogador()
 
         sprintf(texto, "Dinheiro: %.0f", Game.jogador.grana);
         //printf("%s", texto);
-        textsurf = TTF_RenderUTF8_Solid(fonte, texto, color);
+        textsurf = TTF_RenderUTF8_Blended(fonte, texto, color);
         descobreWH(&texW, &texH, textsurf);
         //printf("\nH = %d e W = %d\n", texH, texW);
         //tetuta[i] = SDL_CreateTextureFromSurface(Game.screen.renderer, textsurf[i]);
@@ -1015,7 +974,7 @@ void runGame()
     {
 
         //iniciar o jogo
-        spotarTowers();
+
         //printf("PASSEI");
         SDL_Surface *img = IMG_Load("img/back.png");
         //printf("1");
@@ -1026,29 +985,31 @@ void runGame()
 
         //gdraw(X_TORRE_FIXA_INI, Y_TORRE_FIXA_INI + (TORRE_H * 0), 50, 50, towersFixas[0].icon);
         for (int i = 0; i < 2; i++)
->>>>>>> origin/master
         {
             //towersFixas[i - 1].circle = IMG_Load(PATH_CIRCLE);
             towersFixas[i].x = X_TORRE_FIXA_INI;
             towersFixas[i].y = Y_TORRE_FIXA_INI + (TORRE_H_FIXA * (i));
-            towersFixas[i].damage = 2 + 8 * i;
+            towersFixas[i].damage = 10 + 15 * i;
             towersFixas[i].cost = 20 + 80 * i;
             towersFixas[i].upgrade = 50;
-            towersFixas[i].intervalo_disparo = 3;
+            towersFixas[i].intervalo_disparo = 25;
+            towersFixas[i].intervalo_save = 0;
             towersFixas[i].range = 100;
             gdraw(towersFixas[i].x, towersFixas[i].y, TORRE_H_FIXA, TORRE_W_FIXA, towersFixas[i].icon);
             // printf("i ");
         }
     }
-    if (Game.jogador.vida)
+    if (Game.jogador.vida > 0)
     {
         //MANDA OS MINIONS E O CARAMBA A 4
+        spotarTowers();
         mandaOrda();
+        //mataEles();
     }
     else
     {
         //DEU BLAYBEYDE PARA O CARINHA, GAME OVER, BABY
-        Game.state = 4;
+        Game.state = 3;
         return;
     }
     //printf("P2");
@@ -1064,23 +1025,12 @@ void runGame()
                 break;
             }
         }
-<<<<<<< HEAD
-        else if(event.type == SDL_MOUSEBUTTONDOWN){
-            if(event.button.button == SDL_BUTTON_LEFT){
-                SDL_Rect mouse;
-                mouse.x = event.button.x;
-                mouse.y = event.button.y;
-                mouse.h = mouse.w = 0;
-                //printf("x = %d, y = %d", x, y);
-                /*if ((x >= 424 && x <= 554) && (y >= 200 && y <= 234))
-=======
         else if (event.type == SDL_MOUSEBUTTONUP)
         {
             switch (event.button.button)
             {
             case SDL_BUTTON_LEFT:
                 if (MOUSE.pegouTorre && MOUSE.prendeuTorre && event.button.state == SDL_RELEASED)
->>>>>>> origin/master
                 {
                     SDL_Rect mouseComTower = {MOUSE.position.x, MOUSE.position.y, TORRE_W, TORRE_H};
                     MOUSE.pegouTorre = MOUSE.prendeuTorre = 0;
@@ -1136,27 +1086,6 @@ void runGame()
         {
             MOUSE.position.x = event.motion.x;
             MOUSE.position.y = event.motion.y;
-
-            SDL_Rect item_towers = {X_TORRE_FIXA_INI, Y_TORRE_FIXA_INI, TORRE_W_FIXA, TORRE_H};
-
-            if (event.motion.state == SDL_PRESSED)
-            {
-                /* code */
-                //printf("1");
-            }
-            else
-            {
-                /* code */
-            }
-
-            for (int i = 0; i < 3; i++)
-            {
-                item_towers.y = Y_TORRE_FIXA_INI + TORRE_H * i;
-                if (colidiu(MOUSE.position, item_towers))
-                {
-                    //printf("2");
-                }
-            }
         }
 
         if (Game.state != 1)
@@ -1185,16 +1114,9 @@ void runGame()
     }
 }
 
-<<<<<<< HEAD
-
-
-void pauseGame(){
-    
-=======
 void pauseGame()
 {
 
->>>>>>> origin/master
     SDL_Surface *img = IMG_Load("img/pause.png");
     //SDL_Texture *back = SDL_CreateTextureFromSurface(Game.screen.renderer, background);
     //SDL_RenderCopy(Game.screen.renderer, back, NULL, NULL);
@@ -1230,23 +1152,14 @@ void pauseGame()
                 }
             }
         }
-<<<<<<< HEAD
-        if(Game.state != 2){
-            if(Game.state == 1){
-=======
         if (Game.state != 2)
         {
             if (Game.state == 1)
             {
->>>>>>> origin/master
                 Game.resume = 1;
             }
             break;
         }
-<<<<<<< HEAD
-            
-=======
->>>>>>> origin/master
     }
 }
 
@@ -1254,25 +1167,14 @@ char *composition;
 Sint32 cursor;
 Sint32 selection_len;
 
-<<<<<<< HEAD
- char *composition;
- Sint32 cursor;
- Sint32 selection_len;
-
-
-void runGame_Over(){
-    if(SDL_IsTextInputActive == SDL_FALSE){
-=======
 void runGame_Over()
 {
     if (SDL_IsTextInputActive == SDL_FALSE)
     {
->>>>>>> origin/master
         SDL_StartTextInput();
         //Game.jogador.pontuacao = 100;
     }
     carregaBackground("img/gameover.png");
-<<<<<<< HEAD
 
     SDL_Surface *textsurf;
     SDL_Texture *tempTexture;
@@ -1282,105 +1184,19 @@ void runGame_Over()
     int texW = 0;
     int texH = 0;
 
-    textsurf = TTF_RenderUTF8_Solid(fonte, Game.jogador.nome, color);
+    textsurf = TTF_RenderUTF8_Blended(fonte, Game.jogador.nome, color);
     tempTexture = SDL_CreateTextureFromSurface(Game.screen.renderer, textsurf);
     SDL_QueryTexture(tempTexture, NULL, NULL, &texW, &texH);
     SDL_DestroyTexture(tempTexture);
     gdraw(342, 248, texH, texW, textsurf);
     //Game.jogador.pontuacao = 95;
     sprintf(texto, "Sua pontuação: %d", Game.jogador.pontuacao);
-    textsurf = TTF_RenderUTF8_Solid(fonte, texto, color);
-    
-    tempTexture = SDL_CreateTextureFromSurface(Game.screen.renderer, textsurf);
-    SDL_QueryTexture(tempTexture, NULL, NULL, &texW, &texH);
-    SDL_DestroyTexture(tempTexture);
-    gdraw(339, 280, texH, texW, textsurf);
-
-    SDL_FreeSurface(textsurf);
-
-    
-
-    while(SDL_PollEvent(&event)){
-        if(event.type==SDL_KEYDOWN)
-        {
-            switch(event.key.keysym.sym)
-            {
-                case SDLK_ESCAPE:
-                    Game.state = 0;                
-                    break;
-                /*case SDLK_BACKSPACE:
-                    
-                    break;*/
-            }
-            if(event.key.keysym.sym == SDLK_BACKSPACE){
-                size_t tam = strlen(Game.jogador.nome);
-                if (tam > 0)
-                {
-                    Game.jogador.nome[tam - 1] = '\0';
-                }
-            }
-                    
-        }
-        else if(event.type == SDL_MOUSEBUTTONDOWN){
-            if(event.button.button == SDL_BUTTON_LEFT){
-                int x = event.button.x;
-                int y = event.button.y;
-                printf(" x = %d, y = %d", x, y);
-                if ((x >= 447 && x <= 528) && (y >= 390 && y <= 412))
-                {
-                    Game.state = 0;
-                }
-            }
-        } else if(event.type == SDL_TEXTINPUT){
-            strcat(Game.jogador.nome, event.text.text);
-        } else if(event.type == SDL_TEXTEDITING){
-            composition = event.edit.text;
-            cursor = event.edit.start;
-            selection_len = event.edit.length;
-            strcmp(Game.jogador.nome, composition);
-            
-        }
-
-        if (Game.state != 3)
-        {
-            SDL_StopTextInput();
-            if(strlen(Game.jogador.nome) > 0){
-                Records recs;
-                leRecords(&recs);
-                
-                gravaRecord(&recs, Game.jogador);
-                Game.jogador.vida = VIDA_CHEIA;
-                Game.jogador.pontuacao = 0;
-                Game.jogador.grana = GRANA_CHEIA;
-            }
-            break;
-        }
-    }
-}
-=======
-
-    SDL_Surface *textsurf;
-    SDL_Texture *tempTexture;
-    char texto[50];
->>>>>>> origin/master
-
-    SDL_Color color = {255, 255, 255, 255};
-    int texW = 0;
-    int texH = 0;
-
-    textsurf = TTF_RenderUTF8_Solid(fonte, Game.jogador.nome, color);
-    tempTexture = SDL_CreateTextureFromSurface(Game.screen.renderer, textsurf);
-    SDL_QueryTexture(tempTexture, NULL, NULL, &texW, &texH);
-    SDL_DestroyTexture(tempTexture);
-    gdraw(342, 248, texH, texW, textsurf);
-    //Game.jogador.pontuacao = 95;
-    sprintf(texto, "Sua pontuação: %d", Game.jogador.pontuacao);
-    textsurf = TTF_RenderUTF8_Solid(fonte, texto, color);
+    textsurf = TTF_RenderUTF8_Blended(fonte, texto, color);
 
     tempTexture = SDL_CreateTextureFromSurface(Game.screen.renderer, textsurf);
     SDL_QueryTexture(tempTexture, NULL, NULL, &texW, &texH);
     SDL_DestroyTexture(tempTexture);
-    gdraw(339, 280, texH, texW, textsurf);
+    gdraw(339, 290, texH, texW, textsurf);
 
     SDL_FreeSurface(textsurf);
 
@@ -1417,6 +1233,7 @@ void runGame_Over()
                 if (colidiu(mouse, button))
                 {
                     Game.state = 0;
+                    menu.opcao = menu.enterPressed = 0;
                 }
             }
         }
@@ -1483,26 +1300,30 @@ void upgrade(Tower *t, Jogador *player)
     //}
 }
 
-<<<<<<< HEAD
-void atirar(Tower t, Minion *alvo){
-    
+void proximoNivel();
+void proximoNivel()
+{
+    SDL_Surface *textsurf;
+
+    char texto[50] = "";
+    SDL_Color color = {255, 255, 255, 255};
+    int texW = 0;
+    int texH = 0;
+
+    TTF_Font *font = TTF_OpenFont("WarcraftFont.ttf", 50);
+    sprintf(texto, "NIVEL %.0f", aMinion.level);
+    //printf("NIVEL %d", 20);
+    //printf("%s", texto);
+    textsurf = TTF_RenderUTF8_Blended(font, texto, color);
+    descobreWH(&texW, &texH, textsurf);
+    //printf("\nH = %d e W = %d\n", texH, texW);
+    //tetuta[i] = SDL_CreateTextureFromSurface(Game.screen.renderer, textsurf[i]);
+    //SDL_RenderCopy(Game.screen.renderer, tetuta[i], NULL, &rect[i]);
+    gdraw((X_BARRA_LATERAL / 2) - (texW / 2), SCREEN_H / 1.5, texH, texW, textsurf);
+    //printf("7");
+    SDL_FreeSurface(textsurf);
 }
 
-
-
-
-///MONITORADORES DESSA JOÇA ---------------------------------- #MERESPEITA
-
-
-int colidiu(SDL_Rect de, SDL_Rect com){
-    if ((de.x >= com.x && (de.x + de.w) <= (com.x + com.w)) 
-        && (de.y >= com.y && (de.y + de.h) <= (com.y + com.h)))
-    {
-        return 1;
-    }
-    return 0;
-}
-=======
 void criaMinions();
 void criaMinions()
 {
@@ -1517,13 +1338,19 @@ void criaMinions()
         {
             sprintf(path, MINION_PNG_N, i);
             aMinion.minion[j].spritesheet = IMG_Load(path);
-            aMinion.minion[j].life = lifeModelo;
+            descobreWH(&(aMinion.minion[j].srcrect.w), &(aMinion.minion[j].srcrect.h), aMinion.minion[j].spritesheet);
+            aMinion.minion[j].srcrect.h /= 11;
+            aMinion.minion[j].srcrect.w /= 5;
+            aMinion.minion[j].dstrect.w = aMinion.minion[j].srcrect.w;
+            aMinion.minion[j].dstrect.h = aMinion.minion[j].srcrect.h;
+            aMinion.minion[j].life.backRect.x = aMinion.minion[j].life.backRect.y = aMinion.minion[j].life.backRect.h = aMinion.minion[j].life.backRect.w = aMinion.minion[j].life.bloodRect.x = aMinion.minion[j].life.bloodRect.y = aMinion.minion[j].life.bloodRect.w = aMinion.minion[j].life.bloodRect.h = 0;
+            aMinion.minion[j].life.cont = 100;
             aMinion.minion[j].damage = MIN_DAMAGE * (i + 1);
             aMinion.minion[j].dstrect.x = x_start;
             aMinion.minion[j].dstrect.y = random_int(Y_PORTAL, Y_PORTAL + PORTAL_H);
             //aMinion.minion[j].dstrect.h = aMinion.minion[j].srcrect.h = MINION_H;
             //aMinion.minion[j].dstrect.w = aMinion.minion[j].srcrect.w = MINION_W;
-            aMinion.minion[j].morreu = aMinion.minion[i].passou = 0;
+            aMinion.minion[j].morreu = aMinion.minion[j].passou = 0;
             aMinion.minion[j].toNaY = 2;
             aMinion.minion[j].podeSubir = 1;
             aMinion.minion[j].spritesheet = IMG_Load(path);
@@ -1537,24 +1364,31 @@ void quemMorreu()
 {
     for (int i = 0; i < aMinion.qtd; i++)
     {
-        if (aMinion.minion[i].life.cont == 0 && aMinion.minion[i].morreu == 0)
+        if (aMinion.minion[i].life.cont <= 0 && aMinion.minion[i].morreu == 0)
         {
+            Mix_PlayChannel(-1, morte_minion, 0);
             aMinion.minion[i].morreu = 1;
+            aMinion.qtd_passou_morreu++;
+            Game.jogador.pontuacao += MIN_RECOMPENSA * 5;
+            Game.jogador.grana += MIN_RECOMPENSA * 2;
         }
     }
 }
+
+int passaFrame = 0;
 
 int morreramTodos();
 int morreramTodos()
 {
     for (int i = 0; i < aMinion.qtd; i++)
     {
-        if (aMinion.minion[i].morreu)
+        if (!aMinion.minion[i].morreu)
         {
             quemMorreu();
             return 0;
         }
     }
+    // passaFrame = 100;
     return 1;
 }
 
@@ -1589,6 +1423,40 @@ void spotarMinion(Minion *m)
     //printf("passei6");
 }
 
+void spotarMinions();
+void spotarMinions()
+{
+    int totalFrames = 5;
+
+    //Amount of delay in milliseconds for each frame
+    int delayPerFrame = 250;
+    Minion *m;
+    for (int i = 0; i < aMinion.qtd; i++)
+    {
+        m = &(aMinion.minion[i]);
+        if (m->morreu || m->passou)
+            continue;
+
+        //printf("passei2");
+
+        //printf("\ny = %d\tx = %d\n",m->dstrect.y, m->dstrect.x);
+
+        //SDL_GetTicks() method gives us the time in milliseconds
+
+        //'frame' will give us the index of frame we want to render
+        //For example, if 'frame' is 2, it will give us the third frame
+        int frame = (SDL_GetTicks() / delayPerFrame) % totalFrames;
+        //printf("passei4");
+        m->srcrect.y = frame * m->srcrect.h;
+        m->srcrect.x = m->toNaY * m->srcrect.w;
+        //printf("passei5");
+        gdrawProsMinions(m->srcrect, m->dstrect, m->spritesheet);
+    }
+
+    //SDL_FreeSurface(m->spritesheet);
+    //printf("passei6");
+}
+
 void passouMinion(Minion);
 void passouMinion(Minion m)
 {
@@ -1597,6 +1465,7 @@ void passouMinion(Minion m)
         Game.jogador.vida -= m.damage;
         Game.jogador.pontuacao -= 5;
         aMinion.qtd_passou_morreu++;
+        Mix_PlayChannel(-1, passouM, 0);
         printf("\n%d \t %d", aMinion.qtd, aMinion.qtd_passou_morreu);
     }
 }
@@ -1696,33 +1565,50 @@ void movimentaMinions()
                 }
                 //printf("\n      %d\n", 3);
             }
-            Minion *pM = &(aMinion.minion[i]);
+            //Minion *pM = &(aMinion.minion[i]);
             //printf("declarei");
-            spotarMinion(pM);
+            //spotarMinion(pM);
         }
     }
 }
 
 void mandaOrda()
 {
-    printf("\n%d\n", aMinion.qtd);
-    if (aMinion.qtd == aMinion.qtd_passou_morreu)
+    // printf("\n%d\n", aMinion.qtd);
+    if (passaFrame > 0)
+    {
+        passaFrame--;
+        proximoNivel();
+        return;
+    }
+    if (aMinion.qtd == aMinion.qtd_passou_morreu || morreramTodos())
     {
         aMinion.level += 1;
         if (aMinion.level >= MAX_LEVEL)
             aMinion.level = MAX_LEVEL;
         aMinion.qtd = MIN_MINIONS_POR_ORDA * aMinion.level;
+        passaFrame = 100;
+
+        //SDL_Delay(1000);
         criaMinions();
     }
     else
     {
         movimentaMinions();
-        // spotarMinion();
+        spotarMinions();
+        morreramTodos();
     }
 }
 
 void atirar(Tower t, Minion *alvo)
 {
+    alvo->life.cont -= t.damage;
+    printf("life = %d \n", alvo->life.cont);
+    if(t.indeximg == 1)
+        Mix_PlayChannel(-1,tiro_flecha, 0);
+    else
+        Mix_PlayChannel(-1,tiro_catap, 0);
+    //Mix_PlayChannel(-1, (t.indeximg == 1) ? tiro_flecha : tiro_catap, 0);
 }
 
 SDL_Surface *mSurface;
@@ -1736,16 +1622,20 @@ void spotarTowers()
         {
             char path[100];
             sprintf(path, "img/tower_%d.png", tw->indeximg);
+
             //printf("\n%s\n", path);
             mSurface = IMG_Load(path);
             //    printf(" MODIFICOU ");
         }
-
+        mataEles(tw);
         //if(tw->icon != NULL)
         {
             // printf(" %d %d %d ere \n", tw->x, tw->y, 0  );
-
-            gdraw(tw->x, tw->y, TORRE_H, TORRE_W, mSurface);
+            tw->spriteindex = tw->intervalo_disparo / 8.33;
+            SDL_Rect imgRect = {0, 0, TORRE_W, TORRE_H};
+            imgRect.y = tw->spriteindex * TORRE_H;
+            SDL_Rect position = {tw->x, tw->y, TORRE_W, TORRE_H};
+            gdrawPrasTowers(imgRect, position, mSurface, tw->angle);
             SDL_FreeSurface(mSurface);
             //printf(" TERMINEI ");
         }
@@ -1829,4 +1719,9 @@ float posicaoAtual(float so, float vo, float a, float t)
 {
     return so + vo * t + (a * t) / 2;
 }
->>>>>>> origin/master
+
+float distancia(SDL_Rect de, SDL_Rect para)
+{
+    float d = sqrt(pow(de.x - para.x, 2) + pow(de.y - para.y, 2));
+    return d;
+}
